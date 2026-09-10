@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Every setting the widget reads, with the same keys and the same defaults it
+     had on DMS, so a configuration carried over means the same thing. Plasma
+     serialises these itself and exposes them as plasmoid.configuration.<name>. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="pillContent" type="String">
+            <default>localIp</default>
+        </entry>
+        <entry name="colorMode" type="String">
+            <default>theme</default>
+        </entry>
+        <entry name="customColor" type="Color">
+            <default>#FFFFFF</default>
+        </entry>
+        <entry name="iconColorMode" type="String">
+            <default>match</default>
+        </entry>
+        <entry name="iconCustomColor" type="Color">
+            <default>#FFFFFF</default>
+        </entry>
+        <entry name="showIcon" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="pillIconMode" type="String">
+            <default>icon</default>
+        </entry>
+        <entry name="iconName" type="String">
+            <default>lan</default>
+        </entry>
+        <entry name="iconOffset" type="Int">
+            <default>0</default>
+        </entry>
+        <entry name="textOffset" type="Int">
+            <default>0</default>
+        </entry>
+        <entry name="monospace" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showPublicSection" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showIsp" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showLocation" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showLocalSection" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showGateway" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showLatency" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showDistroLogo" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showCountryFlag" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showVpnSection" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="localIpSource" type="String">
+            <default>lan</default>
+        </entry>
+        <entry name="showTunnelSection" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showVpnInPill" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="showVpnName" type="Bool">
+            <default>false</default>
+        </entry>
+        <entry name="tintPillWhenVpn" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="vpnSingleActive" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="vpnIconName" type="String">
+            <default>vpn_key</default>
+        </entry>
+        <entry name="startPrivate" type="Bool">
+            <default>false</default>
+        </entry>
+        <entry name="lookupPublic" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="lookupIpv6" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="publicProvider" type="String">
+            <default>https://ipinfo.io/json</default>
+        </entry>
+        <entry name="latencyMode" type="String">
+            <default>gateway</default>
+        </entry>
+        <entry name="pingTarget" type="String">
+            <default>1.1.1.1</default>
+        </entry>
+        <entry name="refreshSeconds" type="Int">
+            <default>300</default>
+        </entry>
+    </group>
+</kcfg>

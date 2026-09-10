@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# nmcli de mentira: reproduce la maquina del usuario - una conexion cableada
+# activa y tres perfiles VPN cargados pero desconectados, como los muestra el
+# applet nativo de Plasma. Uno openvpn para cubrir el otro tipo.
+args="$*"
+case "$args" in
+  *"-f DEVICE,TYPE,STATE,CONNECTION device status"*)
+    printf 'eno1:ethernet:connected:Wired connection 1\nlo:loopback:connected:lo\n' ;;
+  *"connection show --active"*)
+    printf 'u-wired:802-3-ethernet:eno1:activated:Wired connection 1\n' ;;
+  *"-f vpn.service-type connection show"*)
+    case "$args" in
+      *u-nl*) printf 'vpn.service-type:org.freedesktop.NetworkManager.openvpn\n' ;;
+      *)      printf 'vpn.service-type:\n' ;;
+    esac ;;
+  *"-f UUID,TYPE,AUTOCONNECT,NAME connection show"*)
+    printf 'u-wired:802-3-ethernet:yes:Wired connection 1\n'
+    printf 'u-ca:wireguard:no:VPN Canada\n'
+    printf 'u-us:wireguard:yes:VPN United States\n'
+    printf 'u-nl:vpn:no:VPN Netherlands\n' ;;
+  *"device wifi list"*) : ;;
+  *) : ;;
+esac

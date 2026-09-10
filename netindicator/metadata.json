@@ -1,0 +1,18 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "agustinluzardo"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Tu IP local y los perfiles VPN de NetworkManager, desde el panel",
+        "Icon": "network-wired",
+        "Id": "com.agustinluzardo.netindicator",
+        "License": "MIT",
+        "Name": "Network Indicator",
+        "Version": "2.4.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

@@ -1,0 +1,7 @@
+# El renderizador de los tests es un binario compilado; run.sh lo reconstruye
+# desde render.cpp si falta.
+tests/render
+
+# Salidas de los tests y paquetes armados.
+*.png
+*.zip

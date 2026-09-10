@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# curl de mentira. FAKE_CURL_CASE elige el escenario; imprime tambien el -w que
+# le pide el script, para que la cabecera salga como en la realidad.
+forced4=0; url=""; wfmt=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -4) forced4=1 ;;
+    -w) shift; wfmt="$1" ;;
+    http*|https*) url="$1" ;;
+  esac
+  shift
+done
+emit() { printf '%s' "$1"; [ -n "$wfmt" ] && printf "\n#http=%s" "$2"; }
+
+case "${FAKE_CURL_CASE:-ok}" in
+  ok)
+    emit '{"ip":"186.57.139.30","org":"AS22927 Telefonica de Argentina","city":"Berazategui","region":"Buenos Aires","country":"AR"}' 200 ;;
+  v6only)
+    if [ "$forced4" = "1" ]; then emit "" 000; exit 7; fi
+    emit '{"ip":"2802:8010:61ee:e201:5ddb:79bd:c528:50f8","org":"AS22927 Telefonica de Argentina","city":"Berazategui","region":"Buenos Aires","country":"AR"}' 200 ;;
+  ratelimited)
+    # ipinfo.io limita por IP y devuelve 429 con cuerpo vacio; el segundo
+    # proveedor contesta con OTRO esquema de campos.
+    case "$url" in
+      *ipinfo*) emit '{"status":429,"error":{"title":"Rate limit hit","message":"Sign up at ipinfo.io"}}' 429 ;;
+      *) emit '{"ip":"186.57.139.30","asn_org":"Telefonica de Argentina","country_iso":"AR","country":"Argentina","city":"Berazategui"}' 200 ;;
+    esac ;;
+  anidado)
+    # Un esquema con los datos un nivel adentro.
+    emit '{"ip":"186.57.139.30","success":true,"country":"Argentina","country_code":"AR","city":"Berazategui","connection":{"asn":22927,"org":"Telefonica de Argentina","isp":"Telefonica"}}' 200 ;;
+  timeout)  emit "" 000; exit 28 ;;
+  html)     emit '<html><title>429 Too Many Requests</title></html>' 429 ;;
+  alldown)  emit "" 503 ;;
+esac

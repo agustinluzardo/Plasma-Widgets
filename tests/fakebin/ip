@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Con los lifetimes que trae `ip -j addr` de verdad: bajan un segundo por
+# segundo en una direccion DHCP. Si la firma del estado se calculara sobre el
+# texto crudo del probe, estos solos bastarian para que pareciera que la red
+# cambia en cada lectura.
+printf '[{"ifname":"eno1","addr_info":[{"family":"inet","local":"192.168.1.39","scope":"global","valid_life_time":83915,"preferred_life_time":83915}]}]\n'

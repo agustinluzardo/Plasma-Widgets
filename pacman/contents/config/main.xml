@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The same 17 keys and defaults the widget had on DMS. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="workspaceCount" type="Int">
+            <default>5</default>
+        </entry>
+        <entry name="maxSlots" type="Int">
+            <default>10</default>
+        </entry>
+        <entry name="autoIconSize" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="iconSizeOverride" type="Int">
+            <default>21</default>
+        </entry>
+        <entry name="autoSpacing" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="spacingOverride" type="Int">
+            <default>6</default>
+        </entry>
+        <entry name="pelletSize" type="Int">
+            <default>30</default>
+        </entry>
+        <entry name="perMonitor" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="palette" type="String">
+            <default>arcade</default>
+        </entry>
+        <entry name="ghostMode" type="String">
+            <default>behind</default>
+        </entry>
+        <entry name="ghostColorMode" type="String">
+            <default>workspace</default>
+        </entry>
+        <entry name="ghostMotion" type="String">
+            <default>arcade</default>
+        </entry>
+        <entry name="frightenedGhosts" type="Bool">
+            <default>false</default>
+        </entry>
+        <entry name="animations" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="animationStyle" type="String">
+            <default>arcade</default>
+        </entry>
+        <entry name="scrollToSwitch" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="scrollReversed" type="Bool">
+            <default>false</default>
+        </entry>
+        <entry name="slotBackground" type="String">
+            <default>none</default>
+        </entry>
+        <entry name="slotBackgroundColorMode" type="String">
+            <default>auto</default>
+        </entry>
+        <entry name="slotBackgroundColor" type="Color">
+            <default>#2121DE</default>
+        </entry>
+        <entry name="mouthPellet" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="debugOverlay" type="Bool">
+            <default>false</default>
+        </entry>
+    </group>
+</kcfg>
