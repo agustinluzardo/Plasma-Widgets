@@ -10,9 +10,17 @@ Two panel widgets for KDE Plasma 6, written natively for it.
   and pellets. Click a slot to switch, scroll to step through them.
 
 They began as plugins for [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell)
-on Hyprland and were **rewritten** for Plasma rather than ported: same features,
-but the seam with the host is Plasma's own — representations, `KConfigXT`
-settings, the icon theme, `libtaskmanager`, `NetworkManager`.
+on Hyprland, and calling them either a port or a rewrite would overstate one
+half. What draws and what computes came across close to line-for-line — Pac-Man's
+sprite geometry is the original's, arc for arc. What talks to the host was
+written from scratch, because none of it transfers: representations, `KConfigXT`
+settings, the icon theme, `libtaskmanager`, `NetworkManager`. Measured against
+the originals, about 40% of the code here is inherited and 60% is new, and the
+settings pages share not a single line.
+
+That split is also where every bug lived: the representation that drew nothing,
+the clicks that did nothing, the probe script that was a syntax error. None of
+them were in the inherited code.
 
 ## Requirements
 
