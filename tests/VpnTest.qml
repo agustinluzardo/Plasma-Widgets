@@ -35,6 +35,15 @@ Item {
         h.expect("ninguno conectado", Lib.NetState.vpnActiveNames.length, 0);
         h.expect("pero hay VPN disponible", Lib.NetState.vpnAvailable, true);
         h.expect("y la IP local llego igual", Lib.NetState.localIp, "192.168.1.39");
+
+        // nmcli escapa los dos puntos literales. El nombre tiene que llegar
+        // legible, no con la barra invertida a la vista.
+        Lib.NetService.parseProfiles("u-x:wireguard:no:VPN\\: Canada:\n"
+                                   + "u-y:vpn:yes:Casa \\\\ Oficina:svc");
+        const p2 = Lib.NetService.vpnProfiles;
+        h.expect("un nombre con dos puntos se desescapa", p2[0].name, "VPN: Canada");
+        h.expect("y una barra invertida tambien", p2[1].name, "Casa \\ Oficina");
+        h.expect("sin perder el resto de los campos", p2[1].autoconnect, true);
         console.log("=== " + h.checks + " checks, " + (h.failures === 0 ? "TODO PASA" : h.failures + " FALLAS") + " ===");
     }
 }

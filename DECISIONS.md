@@ -443,3 +443,55 @@ NetworkManager, desde el panel"— no tiene ni una. Ahora busca palabras
 funcionales del castellano, que son las que no se pueden esquivar al escribir
 una frase. Falsificada devolviéndole el texto viejo: lo caza por `desde, el,
 los, tu, y`.
+
+## Segunda auditoría: las zonas que la primera no tocó
+
+**`perMonitor` era un ajuste muerto, y ahora funciona.** Estaba en el esquema, en
+la página y en `pluginData`, y nadie lo leía. Lo justificaba este comentario, que
+es **falso**:
+
+> *Plasma has one set of virtual desktops for the whole session - they are not
+> per monitor the way Hyprland workspaces are*
+
+Los escritorios son globales, pero **cuál está actual puede diferir por salida**:
+`VirtualDesktopInfo::WaylandPrivate` mantiene `currentDesktops[outputName]`,
+poblado por `PlasmaVirtualDesktop::outputEntered`. No es teoría — el Pager de KDE
+se apoya exactamente en eso (`plasma-desktop/applets/pager/pagermodel.cpp:363`) y
+el Task Manager también (`taskfilterproxymodel.cpp:390`). `currentDesktopByScreenName`
+**sí** es `Q_INVOKABLE`, al contrario que `position()` y `requestActivate()`.
+
+La tira toma su pantalla igual que el Pager: `screenName: root.Screen.name`
+(`applets/pager/qml/main.qml:144`). Como es una **función** y no una propiedad,
+ningún binding se entera solo: hace falta escuchar `currentDesktopForScreenChanged`,
+y se escucha desde la tira, no desde el singleton, porque este archivo ya aprendió
+que un `Connections` guardado en una propiedad del singleton es frágil.
+
+Límite honesto: `requestActivateOnScreen` **no** es invocable, así que hacer clic
+en un slot cambia el escritorio de todas las pantallas. Está dicho en el texto del
+ajuste.
+
+**Un nombre de VPN con dos puntos salía con la barra invertida.** `nmcli -t`
+escapa `:` como `\:`, el diseño pone el campo largo al final para no tener que
+desescapar… y nadie desescapaba el valor final. "VPN: Canada" se veía
+`VPN\: Canada`. Una sola pasada, no dos reemplazos seguidos, que con `\\:` se
+pisarían.
+
+**El flujo de VPN: auditado, sano, y ahora cubierto.** `vpnIsBusy` deja todos los
+botones grises y sólo se baja dentro de un refresh; si ese refresh no llega, el
+panel se congela — que es lo que pasó en DMS. El watchdog que lo rescata está
+bien puesto (`Timer` cada 2 s mientras hay ocupación, con gracia de 30 s, o 6 s
+si la operación provablemente no puede contestar). No tenía **ni un test**: ahora
+son 18, incluidos el rescate, las dos gracias y el `vpnToggle` del popout.
+Falsificado anulando `recoverStuckVpnBusy()`.
+
+**Hallazgo abierto: el port perdió el modo vertical.** Los dos originales de DMS
+declaran `verticalBarPill` además del horizontal
+(`PacmanWorkspaces.qml:1262`, `NetIndicator.qml:849`). En el port **no queda
+ninguno**, y ningún widget mira `Plasmoid.formFactor`; el `isVertical` de
+NetState está clavado en `false`. En un panel vertical el contenedor fuerza el
+ancho al grosor del panel y toma el alto de los hints, así que la tira horizontal
+quedaría recortada.
+
+Y expone un punto ciego de la auditoría anterior: medí la paridad contando
+**claves de settings**, no capacidades. Por eso dio 21/21 y 33/33 y aun así
+faltaba una función entera.

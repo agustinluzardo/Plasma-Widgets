@@ -83,7 +83,7 @@ else
     echo "$vout" | grep -E "PASS|FAIL" | sed 's/^/   /'
     echo "$vout" | grep -qE "FAIL|QML ERROR" && { echo "   !! VpnTest"; failed=1; }
     n="$(echo "$vout" | grep -c "PASS ")"
-    [ "$n" -lt 10 ] && { echo "   !! VpnTest solo afirmo $n checks (minimo 10)"; failed=1; }
+    [ "$n" -lt 13 ] && { echo "   !! VpnTest solo afirmo $n checks (minimo 13)"; failed=1; }
 
     # Y que releer no cuente como cambiar: la señal realimenta un refreshAll(),
     # así que emitirla en cada lectura deja el widget releyéndose en bucle.
@@ -184,6 +184,18 @@ for p in netindicator pacman; do
     fi
 done
 
+echo; echo "==> perMonitor hace algo"
+# Era un ajuste muerto: estaba en el esquema, en la página y en pluginData, y
+# nadie lo leía. El comentario que lo justificaba decía que Plasma no tiene
+# escritorios por monitor - es falso: son globales, pero cuál está actual puede
+# diferir por salida, y el Pager de KDE se apoya justo en eso
+# (plasma-desktop/applets/pager/pagermodel.cpp:363).
+out="$(cd "$here" && ./render PerMonitorTest.qml /tmp/t-permonitor.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
+echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
+echo "$out" | grep -qE "FAIL|QML ERROR|Cannot " && { echo "   !! PerMonitorTest"; failed=1; }
+n="$(echo "$out" | grep -c "PASS ")"
+[ "$n" -lt 9 ] && { echo "   !! PerMonitorTest solo afirmo $n checks (minimo 9)"; failed=1; }
+
 echo; echo "==> el fondo del slot y los rieles"
 # El port no los tenía: se agregaron en la versión de DMS después de portearlo.
 # El conteo de píxeles es DEL COLOR del corredor, no de píxeles pintados: con
@@ -194,6 +206,18 @@ echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |unavailable|is not a type" && { e
 n="$(echo "$out" | grep -c "PASS ")"
 [ "$n" -lt 19 ] && { echo "   !! BackgroundTest solo afirmo $n checks (minimo 19)"; failed=1; }
 python3 "$here/pixels.py" /tmp/t-bg.png --pacman --color FF8800 20 | sed 's/^/   /' || failed=1
+
+echo; echo "==> el flujo de VPN no deja el panel congelado"
+# La zona con más forma de trampa y sin un solo test hasta ahora: vpnIsBusy deja
+# todos los botones grises y sólo se baja dentro de un refresh. Si ese refresh no
+# llega -la VPN tarda, la salida viene vacía, el proceso no contesta- el panel
+# queda congelado, que es lo que pasó en la versión de DMS. Cubre conectar,
+# fallar, el rescate del flag colgado, las dos gracias, y el botón del popout.
+out="$(cd "$here" && ./render VpnFlowTest.qml /tmp/t-vpnflow.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
+echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
+echo "$out" | grep -qE "FAIL|QML ERROR|Cannot " && { echo "   !! VpnFlowTest"; failed=1; }
+n="$(echo "$out" | grep -c "PASS ")"
+[ "$n" -lt 18 ] && { echo "   !! VpnFlowTest solo afirmo $n checks (minimo 18)"; failed=1; }
 
 echo; echo "==> el botón del medio hace algo, siempre"
 # La alternancia LAN/túnel está detrás del ajuste "Swap on middle click", que no

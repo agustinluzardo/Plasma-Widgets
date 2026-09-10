@@ -82,6 +82,28 @@ QtObject {
     // Splits an nmcli -t line into `count` fields, with everything after the
     // last separator kept whole - that trailing field is the one allowed to
     // contain colons.
+    // nmcli -t escapa los dos puntos literales como "\\:" y la barra invertida
+    // como "\\\\". El diseno pone SIEMPRE el campo que puede llevar dos puntos al
+    // final, asi que partir por el n-esimo dos puntos es correcto - pero el
+    // valor que sale sigue escapado, y nadie lo desescapaba: una VPN llamada
+    // "VPN: Canada" se mostraba como "VPN\\: Canada".
+    //
+    // Una sola pasada, no dos reemplazos seguidos: con "\\\\:" el segundo
+    // reemplazo actuaria sobre lo que produjo el primero.
+    function unescapeField(v) {
+        const s = String(v ?? "");
+        let out = "";
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] === "\\" && i + 1 < s.length) {
+                out += s[i + 1];
+                i++;
+            } else {
+                out += s[i];
+            }
+        }
+        return out;
+    }
+
     function splitTail(line, count) {
         const out = [];
         let rest = line;
@@ -244,7 +266,7 @@ QtObject {
                 "uuid": f[0],
                 "type": f[1],
                 "autoconnect": f[2] === "yes",
-                "name": f[3],
+                "name": net.unescapeField(f[3]),
                 "serviceType": serviceType,
                 "remoteHost": "",
                 "username": ""
@@ -263,7 +285,7 @@ QtObject {
             const f = net.splitTail(rows[i], 5);
             if (!net.isVpnType(f[1]))
                 continue;
-            out.push({ "uuid": f[0], "device": f[2], "state": f[3], "name": f[4] });
+            out.push({ "uuid": f[0], "device": f[2], "state": f[3], "name": net.unescapeField(f[4]) });
         }
 
         const before = net.vpnActive.length;

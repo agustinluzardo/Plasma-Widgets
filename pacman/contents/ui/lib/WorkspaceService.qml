@@ -76,6 +76,35 @@ QtObject {
         return 0;
     }
 
+    // El escritorio actual DE UNA PANTALLA.
+    //
+    // En Plasma los escritorios virtuales son globales, pero cual esta "actual"
+    // puede diferir por salida: VirtualDesktopInfo::WaylandPrivate mantiene
+    // currentDesktops[outputName], poblado por PlasmaVirtualDesktop::
+    // outputEntered. No es teoria - el Pager de KDE hace exactamente esto
+    // (plasma-desktop/applets/pager/pagermodel.cpp:363) y el Task Manager
+    // tambien (taskfilterproxymodel.cpp:390).
+    //
+    // currentDesktopByScreenName SI es Q_INVOKABLE, al contrario que
+    // position() y requestActivate(). Cuando esa pantalla no tiene entrada
+    // propia, la implementacion cae al global sola, asi que no hay que
+    // decidirlo aqui.
+    function currentDesktopFor(screenName) {
+        if (!ws._info)
+            return undefined;
+        if (!screenName)
+            return ws._info.currentDesktop;
+        return ws._info.currentDesktopByScreenName(screenName);
+    }
+
+    // 1-based, como focusedNum, pero para la pantalla que se pida.
+    function focusedNumFor(screenName) {
+        const cur = ws.currentDesktopFor(screenName);
+        if (cur === undefined || cur === null)
+            return 0;
+        return ws.positionOf(cur);
+    }
+
     // How many windows sit on each desktop, by position. A window can be on all
     // desktops (an empty list), which counts for none of them rather than all -
     // a pinned window is not what "this desktop is in use" means.

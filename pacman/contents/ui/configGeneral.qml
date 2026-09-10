@@ -107,7 +107,7 @@ KCM.SimpleKCM {
             wrapMode: Text.WordWrap
             font: Kirigami.Theme.smallFont
             color: Kirigami.Theme.disabledTextColor
-            text: "Each panel shows the desktops of the screen it lives on. Off, every panel mirrors the focused screen."
+            text: "Plasma's virtual desktops are shared, but which one is current can differ per screen. On, the strip follows its own screen; off, it follows the session's current desktop. Clicking a slot always switches every screen - Plasma exposes no per-screen switch to widgets."
         }
 
         // ----------------------------------------------------------- size --

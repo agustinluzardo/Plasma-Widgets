@@ -352,17 +352,24 @@ Item {
     }
 
     // ------------------------------------------------------------ compositor --
-    // Plasma has one set of virtual desktops for the whole session - they are
-    // not per monitor the way Hyprland workspaces are - so the two branches
-    // that existed to keep a strip pinned to its own monitor have nothing to
-    // choose between here. niriMode stays false and the Plasma backend is the
-    // one that answers.
+    // Este comentario decia que Plasma tiene un solo juego de escritorios para
+    // toda la sesion y que por eso no habia nada que elegir por monitor. Es
+    // falso, y era la razon de que `perMonitor` fuera un ajuste muerto: los
+    // escritorios son globales, pero CUAL esta actual puede diferir por salida.
+    // VirtualDesktopInfo::WaylandPrivate mantiene currentDesktops[outputName],
+    // y el Pager de KDE se apoya justo en eso
+    // (plasma-desktop/applets/pager/pagermodel.cpp:363).
     readonly property bool niriMode: false
-    readonly property string screenName: ""
-    // When true the widget mirrors whichever monitor currently has focus instead
-    // of pinning itself to the monitor its bar lives on.
-    // Always true: there is only one set of desktops to follow.
-    readonly property bool followFocus: true
+
+    // La pantalla en la que vive este panel, por el mismo camino que el Pager:
+    // `screenName: root.Screen.name` (applets/pager/qml/main.qml:144).
+    // No es readonly a proposito: asi se puede fijar, y asi un test puede
+    // simular dos pantallas sin necesidad de dos pantallas.
+    property string screenName: root.Screen.name
+
+    // Con perMonitor puesto, la tira sigue el escritorio de SU pantalla; sin el,
+    // el global.
+    readonly property bool followFocus: !root.perMonitor
 
     // Single revision counter every derived binding depends on. Compositor state
     // is also read live, so ordinary QML reactivity does the work; the counter is
@@ -386,7 +393,24 @@ Item {
         // list yet, which is the same "state not readable right now" that the
         // original guarded against - snapping to 1 there made a momentary blip
         // look like a walk back to the first workspace.
-        return Lib.WorkspaceService.focusedNum
+        return root.perMonitor && root.screenName !== ""
+             ? Lib.WorkspaceService.focusedNumFor(root.screenName)
+             : Lib.WorkspaceService.focusedNum
+    }
+
+    // currentDesktopByScreenName es una FUNCION, no una propiedad, asi que
+    // ningun binding se entera solo de que cambio. La señal existe y es
+    // publica; se escucha desde aqui y no desde el singleton, porque este
+    // archivo ya aprendio que un Connections guardado en una propiedad del
+    // singleton, apuntando a sus propios hijos mientras aun se construye, es
+    // fragil.
+    Connections {
+        target: Lib.WorkspaceService._info
+        ignoreUnknownSignals: true
+        function onCurrentDesktopForScreenChanged(changed) {
+            if (!root.perMonitor || changed === root.screenName)
+                root.bumpRevision()
+        }
     }
 
     property int lastKnownFocusId: 1
