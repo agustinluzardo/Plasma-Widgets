@@ -16,6 +16,11 @@ import "lib" as Lib
 Item {
     id: pill
 
+
+    // El estado del applet, uno por instancia. Lo entrega main.qml: un singleton
+    // aqui seria uno para todo el escritorio, y con el widget en dos paneles el
+    // segundo pisaba al primero.
+    required property QtObject state
     // Plasma sets this on the compact representation right after creating it
     // (AppletQuickItemPrivate::createCompactRepresentationItem). It is the only
     // handle a representation gets on the applet item, and therefore the only
@@ -90,43 +95,43 @@ Item {
         verticalItemAlignment: Grid.AlignVCenter
         horizontalItemAlignment: Grid.AlignHCenter
 
-        spacing: (Lib.NetState.showIcon || Lib.NetState.vpnShownInPill) && Lib.NetState.pillText !== "" && !pill.isVertical ? Lib.Theme.spacingXS : 0
+        spacing: (pill.state.showIcon || pill.state.vpnShownInPill) && pill.state.pillText !== "" && !pill.isVertical ? Lib.Theme.spacingXS : 0
 
         Lib.DankIcon {
-            visible: Lib.NetState.showIcon && !Lib.NetState.pillShowsFlag
-            name: Lib.NetState.privacyMode ? "visibility_off" : Lib.NetState.iconName
-            size: Lib.NetState.pillIconSize
-            color: Lib.NetState.effectiveIconColor
+            visible: pill.state.showIcon && !pill.state.pillShowsFlag
+            name: pill.state.privacyMode ? "visibility_off" : pill.state.iconName
+            size: pill.state.pillIconSize
+            color: pill.state.effectiveIconColor
         }
 
         Lib.StyledText {
-            visible: Lib.NetState.showIcon && Lib.NetState.pillShowsFlag
-            text: Lib.NetState.countryFlag
-            font.family: Lib.NetState.flagFontFamily
+            visible: pill.state.showIcon && pill.state.pillShowsFlag
+            text: pill.state.countryFlag
+            font.family: pill.state.flagFontFamily
             // Sized to sit on the same optical line as the icon it replaces.
-            font.pixelSize: Lib.NetState.pillIconSize
+            font.pixelSize: pill.state.pillIconSize
         }
 
         Lib.DankIcon {
-            visible: Lib.NetState.vpnShownInPill
-            name: Lib.NetState.vpnIconName
-            size: Lib.NetState.pillIconSize
-            color: Lib.NetState.tintPillWhenVpn ? Lib.Theme.success : Lib.NetState.pillIconColor
+            visible: pill.state.vpnShownInPill
+            name: pill.state.vpnIconName
+            size: pill.state.pillIconSize
+            color: pill.state.tintPillWhenVpn ? Lib.Theme.success : pill.state.pillIconColor
         }
 
         Lib.StyledText {
-            visible: !pill.isVertical && Lib.NetState.vpnShownInPill && Lib.NetState.showVpnName
-            text: Lib.NetState.vpnLabel
-            color: Lib.NetState.tintPillWhenVpn ? Lib.Theme.success : Lib.NetState.pillTextColor
-            font.pixelSize: Lib.NetState.pillTextSize
+            visible: !pill.isVertical && pill.state.vpnShownInPill && pill.state.showVpnName
+            text: pill.state.vpnLabel
+            color: pill.state.tintPillWhenVpn ? Lib.Theme.success : pill.state.pillTextColor
+            font.pixelSize: pill.state.pillTextSize
         }
 
         Lib.StyledText {
-            visible: !pill.isVertical && Lib.NetState.pillText !== ""
-            text: Lib.NetState.pillText
-            color: Lib.NetState.pillTextColor
-            font.pixelSize: Lib.NetState.pillTextSize
-            isMonospace: Lib.NetState.monospace
+            visible: !pill.isVertical && pill.state.pillText !== ""
+            text: pill.state.pillText
+            color: pill.state.pillTextColor
+            font.pixelSize: pill.state.pillTextSize
+            isMonospace: pill.state.monospace
         }
     }
 
@@ -149,7 +154,7 @@ Item {
         onPressed: pillMouse.wasExpanded = pill.plasmoidItem ? pill.plasmoidItem.expanded : false
         onClicked: mouse => {
             if (mouse.button === Qt.MiddleButton)
-                Lib.NetState.pillSecondaryAction();
+                pill.state.pillSecondaryAction();
             else
                 pill.togglePopup(pillMouse.wasExpanded);
         }

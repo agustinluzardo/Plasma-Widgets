@@ -14,8 +14,12 @@ import "../pacman/contents/ui/lib" as PL
 import "../netindicator/contents/ui" as N
 import "../netindicator/contents/ui/lib" as NL
 
-Rectangle {
-    id: h
+Rectangle {    id: h
+
+
+    // NetState ya no es un singleton: es uno por applet. El test crea el suyo,
+    // igual que main.qml.
+    NL.NetState { id: estado }
     width: 60; height: 420; color: "#101216"
 
     property int checks: 0
@@ -30,7 +34,7 @@ Rectangle {
     ColumnLayout {
         anchors.fill: parent
         P.PacmanStrip { id: tira; Layout.fillWidth: true }
-        N.NetPill { id: pastilla; Layout.fillWidth: true }
+        N.NetPill { state: estado; id: pastilla; Layout.fillWidth: true }
         Item { Layout.fillHeight: true }
     }
 
@@ -66,7 +70,7 @@ Rectangle {
             const c = Qt.createComponent("../netindicator/contents/ui/main.qml");
             const applet = c.createObject(h);
             h.expect("el applet se construye", applet !== null, true);
-            h.expect("y le pasa la orientacion al estado", NL.NetState.isVertical, true);
+            h.expect("y le pasa la orientacion a SU estado", applet.netState.isVertical, true);
             console.log("   " + tira.diagnostic);
             console.log("=== " + h.checks + " checks, " + (h.failures === 0 ? "TODO PASA" : h.failures + " FALLAS") + " ===");
         }

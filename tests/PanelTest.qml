@@ -10,8 +10,12 @@ import "../netindicator/contents/ui" as N
 import "../pacman/contents/ui/lib" as PL
 import "../netindicator/contents/ui/lib" as NL
 
-Rectangle {
-    id: h
+Rectangle {    id: h
+
+
+    // NetState ya no es un singleton: es uno por applet. El test crea el suyo,
+    // igual que main.qml.
+    NL.NetState { id: estado }
     width: 600; height: 44; color: "#2a2e36"
 
     property int checks: 0
@@ -30,7 +34,7 @@ Rectangle {
         spacing: 8
 
         P.PacmanStrip { id: pac; Layout.fillHeight: true }
-        N.NetPill     { id: net; Layout.fillHeight: true }
+        N.NetPill     { state: estado; id: net; Layout.fillHeight: true }
     }
 
     Component.onCompleted: {

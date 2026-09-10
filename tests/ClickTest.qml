@@ -13,6 +13,7 @@ import "../netindicator/contents/ui/lib" as NL
 import "../pacman/contents/ui/lib" as PL
 
 Rectangle {
+
     id: h
     width: 300; height: 60; color: "#101216"
 
@@ -62,8 +63,8 @@ Rectangle {
             h.expect("y el siguiente lo cierra", h.plasmoidItem.expanded, false);
 
             // El boton del medio es la accion secundaria, no el popup.
-            const before = NL.NetState.showingTunnelIp;
-            NL.NetState.pillSecondaryAction();
+            const before = h.plasmoidItem.netState.showingTunnelIp;
+            h.plasmoidItem.netState.pillSecondaryAction();
             h.expect("el boton del medio no toca el popup", h.plasmoidItem.expanded, false);
 
             // Y la tira sigue cambiando de escritorio con el izquierdo.
@@ -72,14 +73,18 @@ Rectangle {
             // Los controles del panel: los chips llaman a NetState.saveSetting,
             // que solo hablaba con `pluginService` - el objeto de DMS, null en
             // Plasma - asi que todos se dibujaban y ninguno hacia nada.
-            h.expect("main.qml inyecto el guardado", typeof NL.NetState.savePluginData, "function");
-            NL.NetState.saveSetting("pillContent", "publicIp");
+            // Y que sea EL estado de ESTE applet, no uno compartido: con el
+            // widget en dos paneles, un singleton hacia que el segundo pisara
+            // al primero.
+            h.expect("el applet tiene su propio estado", h.plasmoidItem.netState !== null, true);
+            h.expect("main.qml inyecto el guardado", typeof h.plasmoidItem.netState.savePluginData, "function");
+            h.plasmoidItem.netState.saveSetting("pillContent", "publicIp");
             h.expect("un chip cambia el ajuste de verdad",
                      h.plasmoidItem.Plasmoid.configuration.pillContent, "publicIp");
-            NL.NetState.saveSetting("iconOffset", 4);
+            h.plasmoidItem.netState.saveSetting("iconOffset", 4);
             h.expect("y el stepper tambien",
                      h.plasmoidItem.Plasmoid.configuration.iconOffset, 4);
-            NL.NetState.saveSetting("textOffset", 5);
+            h.plasmoidItem.netState.saveSetting("textOffset", 5);
             h.expect("incluido el tamaño de texto nuevo",
                      h.plasmoidItem.Plasmoid.configuration.textOffset, 5);
 

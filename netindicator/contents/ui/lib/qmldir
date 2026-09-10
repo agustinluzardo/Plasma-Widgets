@@ -1,7 +1,7 @@
 singleton Theme 1.0 Theme.qml
 singleton Sh 1.0 Sh.qml
 singleton NetService 1.0 NetService.qml
-singleton NetState 1.0 NetState.qml
+NetState 1.0 NetState.qml
 Process 1.0 Process.qml
 StdioCollector 1.0 StdioCollector.qml
 DankIcon 1.0 DankIcon.qml

@@ -549,3 +549,44 @@ dimensionada por contenido quiere exactamente su ancho- y ya está relajado en e
 eje corto. `TasksModel` no es opcional: las cuentas de ventanas alimentan el
 pellet de escritorio ocupado, que está activo por defecto; ya vive tras un
 `Loader` para que su fallo no se lleve el widget.
+
+## El mismo widget en dos paneles
+
+El usuario puso los dos plugins en un panel horizontal y en uno vertical. El
+segundo rompió al primero: los clics del horizontal dejaron de hacer nada, sus
+ajustes aparecieron reemplazados, y el escritorio se congeló unos segundos.
+
+**`NetState` era un `pragma Singleton`.** plasmashell corre **todos** los applets
+en un solo motor QML, así que un singleton es uno para todo el escritorio. Y
+`main.qml` le escribía tres cosas que son **por instancia**:
+
+| | |
+|---|---|
+| `pluginData` | un `Binding` por applet, peleándose la misma propiedad |
+| `isVertical` | otro `Binding`, igual |
+| `savePluginData` | asignado en `Component.onCompleted`, lo pisaba el último en cargar |
+
+De ahí salen los tres síntomas: los clics del horizontal llamaban a
+`saveSetting`, que iba al `savePluginData` del **vertical**, y escribían en la
+configuración del otro applet; los ajustes que se veían eran los del otro; y dos
+`Binding` disputándose las mismas propiedades reevalúan sin parar todo lo que
+cuelga de ellas -sondas incluidas- lo que explica el tirón.
+
+Ahora `NetState` **no es singleton**: `main.qml` crea uno por applet y se lo pasa
+a las dos representaciones, que ya lo reciben como `required property`. Los
+**hechos** de red (IP, perfiles, latencia) sí son globales y siguen compartidos
+en `NetService`, que sigue siendo singleton: una sola sonda para los dos.
+
+Pac-Man nunca tuvo el problema, y por la razón correcta: lee sus ajustes de
+`Plasmoid.configuration`, que es el de **su** applet, y `WorkspaceService` no
+guarda nada por instancia.
+
+`TwoPanelsTest.qml` construye dos applets y comprueba que sus estados sean
+distintos, que los ajustes no se contagien, que cada uno guarde por su cuenta, y
+que la red sí se comparta. Falsificado devolviendo el `pragma Singleton`: ahí
+`main.qml` ni siquiera puede instanciarlo ("Composite Singleton Type NetState is
+not creatable").
+
+Lo que **no** puedo demostrar desde aquí es el congelamiento del escritorio: no
+tengo cómo reproducir una tormenta de bindings en plasmashell. La explicación
+encaja con el mecanismo, pero es una explicación, no una medición.

@@ -133,6 +133,18 @@ if [ "$lfail" -eq 0 ]; then
     [ "$n" -lt 25 ] && { echo "   !! PublicTest solo afirmo $n checks (minimo 25)"; failed=1; }
 fi
 
+echo; echo "==> el mismo widget en dos paneles"
+# plasmashell corre TODOS los applets en un solo motor QML, así que un
+# `pragma Singleton` es uno para todo el escritorio. NetState guardaba ahí tres
+# cosas por instancia -ajustes, orientación, y la función de guardar- y con el
+# widget en dos paneles el segundo pisaba al primero: los clics de uno escribían
+# en la configuración del otro.
+out="$(cd "$here" && ./render TwoPanelsTest.qml /tmp/t-two.png 1200 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
+echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
+echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |Binding loop" && { echo "   !! TwoPanelsTest"; failed=1; }
+n="$(echo "$out" | grep -c "PASS ")"
+[ "$n" -lt 11 ] && { echo "   !! TwoPanelsTest solo afirmo $n checks (minimo 11)"; failed=1; }
+
 echo; echo "==> la cola de comandos no retiene callbacks ni churnea claves"
 # Dos cosas en un solo sitio. El motor ejecutable deduplica por nombre de
 # source: dos comandos idénticos en vuelo son UNA respuesta, no dos, así que

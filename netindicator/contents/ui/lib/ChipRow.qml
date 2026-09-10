@@ -8,6 +8,11 @@ import org.kde.kirigami as Kirigami
 Flow {
     id: chipRow
 
+
+    // El estado del applet, uno por instancia. Lo entrega main.qml: un singleton
+    // aqui seria uno para todo el escritorio, y con el widget en dos paneles el
+    // segundo pisaba al primero.
+    required property QtObject state
     required property string settingKey
     required property string current
     required property var options   // [{label, value}]
@@ -42,7 +47,7 @@ Flow {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: NetState.saveSetting(chipRow.settingKey, chip.modelData.value)
+                onClicked: chipRow.state.saveSetting(chipRow.settingKey, chip.modelData.value)
             }
         }
     }

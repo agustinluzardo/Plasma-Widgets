@@ -11,8 +11,12 @@
 import QtQuick
 import "../netindicator/contents/ui/lib" as Lib
 
-Item {
-    id: h
+Item {    id: h
+
+
+    // NetState ya no es un singleton: es uno por applet. El test crea el suyo,
+    // igual que main.qml.
+    Lib.NetState { id: estado }
 
     property int checks: 0
     property int failures: 0
@@ -59,7 +63,7 @@ Item {
             "u-wired:802-3-ethernet:eno1:activated:Wired connection 1",
             "u-wired:802-3-ethernet:eno1:activated:Wired connection 1\nu-ca:wireguard:wg0:activated:VPN Canada"));
         h.expect("una VPN que se conecta también", h.emitted, 3);
-        h.expect("y queda registrada como activa", Lib.NetState.vpnActiveNames.join(), "VPN Canada");
+        h.expect("y queda registrada como activa", estado.vpnActiveNames.join(), "VPN Canada");
 
         console.log("=== " + h.checks + " checks, " + (h.failures === 0 ? "TODO PASA" : h.failures + " FALLAS") + " ===");
     }

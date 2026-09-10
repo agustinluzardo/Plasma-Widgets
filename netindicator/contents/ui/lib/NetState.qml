@@ -2,7 +2,17 @@
 // popout from Loaders that live in its own files, and a bound component refuses
 // to be created outside its creation context. Lookups below are all qualified.
 
-pragma Singleton
+// NO es un singleton, y no puede serlo.
+//
+// plasmashell corre TODOS los applets en un solo motor QML, asi que un
+// singleton es uno para todo el escritorio. Este objeto guarda cosas que son
+// POR INSTANCIA -los ajustes del applet, su orientacion, y la funcion con la que
+// escribe su configuracion- y con el widget puesto en dos paneles el segundo
+// pisaba al primero: los clics del horizontal escribian en la configuracion del
+// vertical, y los ajustes del horizontal se veian reemplazados por los del otro.
+//
+// Los HECHOS de red (la IP, los perfiles, la latencia) si son globales y siguen
+// en NetService, que sigue siendo singleton: una sola sonda para los dos.
 import QtQuick
 import org.kde.kirigami as Kirigami
 

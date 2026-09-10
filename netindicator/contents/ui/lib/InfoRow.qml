@@ -8,6 +8,11 @@ import org.kde.kirigami as Kirigami
 Row {
     id: infoRow
 
+
+    // El estado del applet, uno por instancia. Lo entrega main.qml: un singleton
+    // aqui seria uno para todo el escritorio, y con el widget en dos paneles el
+    // segundo pisaba al primero.
+    required property QtObject state
     required property string label
     required property string value
     property bool copyable: true
@@ -23,7 +28,7 @@ Row {
     // The value is the only flexible column, so every fixed column has to be
     // subtracted from it - including the hint. Leaving the hint out of this
     // is what pushed it off the edge of the popout.
-    readonly property real labelWidth: NetState.infoLabelWidth
+    readonly property real labelWidth: infoRow.state.infoLabelWidth
     // The copy slot is always laid out and only its contents come and go. It
     // used to appear with the value, and being 22px tall it took the row
     // from 14px to 22px - so a row filling in resized the popup window. It
@@ -45,7 +50,7 @@ Row {
         text: infoRow.value || "—"
         color: Theme.surfaceText
         font.pixelSize: Theme.fontSizeSmall
-        isMonospace: NetState.monospace
+        isMonospace: infoRow.state.monospace
         elide: infoRow.wrap ? Text.ElideNone : Text.ElideRight
         wrapMode: infoRow.wrap ? Text.WrapAnywhere : Text.NoWrap
         maximumLineCount: infoRow.wrap ? 2 : 1
@@ -94,7 +99,7 @@ Row {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-                NetState.copyValue(infoRow.label, infoRow.value)
+                infoRow.state.copyValue(infoRow.label, infoRow.value)
                 infoRow.justCopied = true
                 copiedTimer.restart()
             }

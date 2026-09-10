@@ -8,8 +8,13 @@ import "lib" as Lib
     Lib.PopoutComponent {
         id: panel
 
+
+    // El estado del applet, uno por instancia. Lo entrega main.qml: un singleton
+    // aqui seria uno para todo el escritorio, y con el widget en dos paneles el
+    // segundo pisaba al primero.
+    required property QtObject state
         headerText: "Network"
-        detailsText: Lib.NetState.statusText
+        detailsText: panel.state.statusText
         showCloseButton: true
 
         // Whether a profile comes up on its own is NetworkManager's state,
@@ -20,13 +25,13 @@ import "lib" as Lib
         // `parentPopout` once the content is loaded, and the loader may be
         // kept alive between opens, so the first open is covered by
         // onCompleted and every later one by the popout's own visibility.
-        Component.onCompleted: Lib.NetState.refreshVpn()
+        Component.onCompleted: panel.state.refreshVpn()
 
         Connections {
             target: panel.parentPopout
             function onShouldBeVisibleChanged() {
                 if (panel.parentPopout && panel.parentPopout.shouldBeVisible)
-                    Lib.NetState.refreshVpn()
+                    panel.state.refreshVpn()
             }
         }
 
@@ -48,7 +53,7 @@ import "lib" as Lib
 
                         readonly property string iconFor: {
                             if (actionItem.modelData === "privacy")
-                                return Lib.NetState.privacyMode ? "visibility_off" : "visibility"
+                                return panel.state.privacyMode ? "visibility_off" : "visibility"
                             if (actionItem.modelData === "appearance")
                                 return "tune"
                             return "refresh"
@@ -61,7 +66,7 @@ import "lib" as Lib
                             anchors.centerIn: parent
                             name: actionItem.iconFor
                             size: Lib.Theme.iconSize - 6
-                            color: actionArea.containsMouse ? Lib.Theme.primary : (actionItem.modelData === "appearance" && Lib.NetState.appearanceOpen ? Lib.Theme.primary : Lib.Theme.surfaceText)
+                            color: actionArea.containsMouse ? Lib.Theme.primary : (actionItem.modelData === "appearance" && panel.state.appearanceOpen ? Lib.Theme.primary : Lib.Theme.surfaceText)
                         }
 
                         MouseArea {
@@ -73,13 +78,13 @@ import "lib" as Lib
                             onClicked: {
                                 switch (actionItem.modelData) {
                                 case "privacy":
-                                    Lib.NetState.privacyMode = !Lib.NetState.privacyMode
+                                    panel.state.privacyMode = !panel.state.privacyMode
                                     break
                                 case "appearance":
-                                    Lib.NetState.appearanceOpen = !Lib.NetState.appearanceOpen
+                                    panel.state.appearanceOpen = !panel.state.appearanceOpen
                                     break
                                 default:
-                                    Lib.NetState.refreshAll()
+                                    panel.state.refreshAll()
                                 }
                             }
                         }
@@ -100,8 +105,8 @@ import "lib" as Lib
             Column {
     // Plasma sizes the popup from these; without them it opens at whatever it
     // guesses, which is how the panel ended up behind other widgets.
-    Layout.minimumWidth: Lib.NetState.popoutWidth
-    Layout.preferredWidth: Lib.NetState.popoutWidth
+    Layout.minimumWidth: panel.state.popoutWidth
+    Layout.preferredWidth: panel.state.popoutWidth
     Layout.minimumHeight: implicitHeight
     Layout.preferredHeight: implicitHeight
 
@@ -109,12 +114,12 @@ import "lib" as Lib
 
                 width: parent.width
                 spacing: Lib.Theme.spacingM
-                visible: !Lib.NetState.appearanceOpen
+                visible: !panel.state.appearanceOpen
 
                 Column {
                     width: parent.width
                     spacing: Lib.Theme.spacingXS
-                    visible: Lib.NetState.showPublicSection
+                    visible: panel.state.showPublicSection
 
                     Row {
                         width: parent.width
@@ -135,9 +140,9 @@ import "lib" as Lib
                             // Drawn only once a font has been proven able
                             // to draw it; otherwise the code below stands
                             // on its own.
-                            visible: Lib.NetState.showCountryFlag && !Lib.NetState.privacyMode && Lib.NetState.countryFlag !== "" && Lib.NetState.flagAvailable
-                            text: Lib.NetState.countryFlag
-                            font.family: Lib.NetState.flagFontFamily
+                            visible: panel.state.showCountryFlag && !panel.state.privacyMode && panel.state.countryFlag !== "" && panel.state.flagAvailable
+                            text: panel.state.countryFlag
+                            font.family: panel.state.flagFontFamily
                             font.pixelSize: Lib.Theme.fontSizeSmall + 2
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -146,8 +151,8 @@ import "lib" as Lib
                         // which country it is on a system with no colour
                         // emoji font installed.
                         Lib.StyledText {
-                            visible: Lib.NetState.showCountryFlag && !Lib.NetState.privacyMode && Lib.NetState.countryCode !== ""
-                            text: Lib.NetState.countryCode
+                            visible: panel.state.showCountryFlag && !panel.state.privacyMode && panel.state.countryCode !== ""
+                            text: panel.state.countryCode
                             color: Lib.Theme.surfaceVariantText
                             font.pixelSize: Lib.Theme.fontSizeSmall - 1
                             anchors.verticalCenter: parent.verticalCenter
@@ -155,31 +160,36 @@ import "lib" as Lib
                     }
 
                     Lib.InfoRow {
+
+                        state: panel.state
                         label: "IPv4"
-                        value: Lib.NetState.maskIfPrivate(Lib.NetState.publicIp4)
+                        value: panel.state.maskIfPrivate(panel.state.publicIp4)
                     }
                     Lib.InfoRow {
+                        state: panel.state
                         label: "IPv6"
-                        value: Lib.NetState.maskIfPrivate(Lib.NetState.publicIp6)
+                        value: panel.state.maskIfPrivate(panel.state.publicIp6)
                         wrap: true
-                        visible: Lib.NetState.lookupIpv6
+                        visible: panel.state.lookupIpv6
                     }
                     Lib.InfoRow {
+                        state: panel.state
                         label: "ISP"
-                        value: Lib.NetState.isp
-                        visible: Lib.NetState.showIsp
+                        value: panel.state.isp
+                        visible: panel.state.showIsp
                     }
                     Lib.InfoRow {
+                        state: panel.state
                         label: "Location"
-                        value: Lib.NetState.location
-                        visible: Lib.NetState.showLocation
+                        value: panel.state.location
+                        visible: panel.state.showLocation
                     }
                 }
 
                 Column {
                     width: parent.width
                     spacing: Lib.Theme.spacingXS
-                    visible: Lib.NetState.showLocalSection
+                    visible: panel.state.showLocalSection
 
                     Row {
                         width: parent.width
@@ -200,8 +210,8 @@ import "lib" as Lib
                         // the theme is what makes it match the rest of the
                         // desktop. The name is resolved once at startup.
                         Kirigami.Icon {
-                            visible: Lib.NetState.showDistroLogo && Lib.NetState.distroIcon !== ""
-                            source: Lib.NetState.distroIcon
+                            visible: panel.state.showDistroLogo && panel.state.distroIcon !== ""
+                            source: panel.state.distroIcon
                             width: Lib.Theme.iconSize - 8
                             height: width
                             anchors.verticalCenter: parent.verticalCenter
@@ -209,25 +219,30 @@ import "lib" as Lib
                     }
 
                     Lib.InfoRow {
+
+                        state: panel.state
                         label: "Local IP"
-                        value: Lib.NetState.maskIfPrivate(Lib.NetState.localIp)
+                        value: panel.state.maskIfPrivate(panel.state.localIp)
                     }
                     Lib.InfoRow {
+                        state: panel.state
                         label: "Gateway"
-                        value: Lib.NetState.maskIfPrivate(Lib.NetState.gateway)
-                        visible: Lib.NetState.showGateway
+                        value: panel.state.maskIfPrivate(panel.state.gateway)
+                        visible: panel.state.showGateway
                     }
                     Lib.InfoRow {
+                        state: panel.state
                         label: "Interface"
-                        value: Lib.NetState.localInterface
+                        value: panel.state.localInterface
                     }
                     Lib.InfoRow {
+                        state: panel.state
                         label: "Latency"
-                        value: Lib.NetState.latency
+                        value: panel.state.latency
                         // Names the hop, so a first-hop reading is never
                         // mistaken for a round trip to the internet.
-                        hint: Lib.NetState.latencyHint
-                        visible: Lib.NetState.showLatency
+                        hint: panel.state.latencyHint
+                        visible: panel.state.showLatency
                     }
                 }
 
@@ -239,7 +254,7 @@ import "lib" as Lib
                 Column {
                     width: parent.width
                     spacing: Lib.Theme.spacingXS
-                    visible: Lib.NetState.showTunnelSection
+                    visible: panel.state.showTunnelSection
 
                     Row {
                         width: parent.width
@@ -256,7 +271,7 @@ import "lib" as Lib
                         // The one thing the VPN service cannot tell you:
                         // whether traffic is actually taking the tunnel.
                         Lib.StyledText {
-                            visible: Lib.NetState.vpnUpButNotRouting
+                            visible: panel.state.vpnUpButNotRouting
                             text: "connected, but traffic is not using it"
                             color: Lib.Theme.error
                             font.pixelSize: Lib.Theme.fontSizeSmall - 1
@@ -265,13 +280,16 @@ import "lib" as Lib
                     }
 
                     Lib.InfoRow {
+
+                        state: panel.state
                         label: "Exit address"
-                        value: Lib.NetState.trafficLeavesViaTunnel ? Lib.NetState.maskIfPrivate(Lib.NetState.routeSourceIp) : ""
-                        hint: Lib.NetState.trafficLeavesViaTunnel ? "" : "\u2192 not tunnelled"
+                        value: panel.state.trafficLeavesViaTunnel ? panel.state.maskIfPrivate(panel.state.routeSourceIp) : ""
+                        hint: panel.state.trafficLeavesViaTunnel ? "" : "\u2192 not tunnelled"
                     }
                     Lib.InfoRow {
+                        state: panel.state
                         label: "Exit device"
-                        value: Lib.NetState.trafficLeavesViaTunnel ? Lib.NetState.routeInterface : ""
+                        value: panel.state.trafficLeavesViaTunnel ? panel.state.routeInterface : ""
                     }
                 }
 
@@ -279,7 +297,7 @@ import "lib" as Lib
                 Column {
                     width: parent.width
                     spacing: Lib.Theme.spacingXS
-                    visible: Lib.NetState.showVpnSection && Lib.NetState.vpnAvailable
+                    visible: panel.state.showVpnSection && panel.state.vpnAvailable
 
                     Row {
                         width: parent.width
@@ -294,8 +312,8 @@ import "lib" as Lib
                         }
 
                         Lib.StyledText {
-                            text: Lib.NetState.vpnConnected ? Lib.NetState.vpnLabel : "Disconnected"
-                            color: Lib.NetState.vpnConnected ? Lib.Theme.success : Lib.Theme.surfaceVariantText
+                            text: panel.state.vpnConnected ? panel.state.vpnLabel : "Disconnected"
+                            color: panel.state.vpnConnected ? Lib.Theme.success : Lib.Theme.surfaceVariantText
                             font.pixelSize: Lib.Theme.fontSizeSmall - 1
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -303,7 +321,7 @@ import "lib" as Lib
                         // Sits on the header's existing row, so saying it
                         // costs no height.
                         Lib.StyledText {
-                            visible: Lib.NetState.multipleVpnsActive
+                            visible: panel.state.multipleVpnsActive
                             text: "· several at once"
                             color: Lib.Theme.error
                             font.pixelSize: Lib.Theme.fontSizeSmall - 1
@@ -313,7 +331,7 @@ import "lib" as Lib
 
                     Lib.StyledText {
                         width: parent.width
-                        visible: Lib.NetState.vpnProfiles.length === 0
+                        visible: panel.state.vpnProfiles.length === 0
                         wrapMode: Text.WordWrap
                         color: Lib.Theme.surfaceVariantText
                         font.pixelSize: Lib.Theme.fontSizeSmall
@@ -321,15 +339,15 @@ import "lib" as Lib
                     }
 
                     Repeater {
-                        model: Lib.NetState.vpnProfiles
+                        model: panel.state.vpnProfiles
 
                         Row {
                             id: vpnRow
 
                             required property var modelData
 
-                            readonly property bool isOn: Lib.NetState.vpnIsActive(vpnRow.modelData.uuid)
-                            readonly property bool isBusy: Lib.NetState.vpnIsConnecting(vpnRow.modelData.uuid)
+                            readonly property bool isOn: panel.state.vpnIsActive(vpnRow.modelData.uuid)
+                            readonly property bool isBusy: panel.state.vpnIsConnecting(vpnRow.modelData.uuid)
                             readonly property string failure: (Lib.NetService.vpnErrorUuid === vpnRow.modelData.uuid) ? (Lib.NetService.vpnError || "") : ""
 
                             width: parent ? parent.width : 0
@@ -359,11 +377,11 @@ import "lib" as Lib
                                     text: {
                                         if (vpnRow.failure !== "")
                                             return vpnRow.failure
-                                        const bits = [Lib.NetState.vpnKindLabel(vpnRow.modelData)]
-                                        if (Lib.NetState.autoconnectFor(vpnRow.modelData))
+                                        const bits = [panel.state.vpnKindLabel(vpnRow.modelData)]
+                                        if (panel.state.autoconnectFor(vpnRow.modelData))
                                             bits.push("connects at boot")
                                         if (vpnRow.isOn) {
-                                            const st = Lib.NetState.vpnStateFor(vpnRow.modelData.uuid)
+                                            const st = panel.state.vpnStateFor(vpnRow.modelData.uuid)
                                             bits.push(st !== "" ? st : "connected")
                                         } else if (vpnRow.modelData.remoteHost) {
                                             bits.push(vpnRow.modelData.remoteHost)
@@ -379,8 +397,8 @@ import "lib" as Lib
                                 anchors.verticalCenter: parent.verticalCenter
                                 on: vpnRow.isOn
                                 busy: vpnRow.isBusy
-                                enabled: !Lib.NetState.vpnBusy || vpnRow.isBusy
-                                onActivated: Lib.NetState.vpnToggle(vpnRow.modelData)
+                                enabled: !panel.state.vpnBusy || vpnRow.isBusy
+                                onActivated: panel.state.vpnToggle(vpnRow.modelData)
                             }
                         }
                     }
@@ -400,7 +418,7 @@ import "lib" as Lib
 
                 width: parent.width
                 spacing: Lib.Theme.spacingS
-                visible: Lib.NetState.appearanceOpen
+                visible: panel.state.appearanceOpen
 
                 Lib.StyledText {
                     text: "Bar pill shows"
@@ -409,9 +427,11 @@ import "lib" as Lib
                 }
 
                 Lib.ChipRow {
+
+                    state: panel.state
                     settingKey: "pillContent"
-                    current: Lib.NetState.pillContent
-                    options: Lib.NetState.pillContentOptions
+                    current: panel.state.pillContent
+                    options: panel.state.pillContentOptions
                 }
 
                 Lib.StyledText {
@@ -421,9 +441,11 @@ import "lib" as Lib
                 }
 
                 Lib.ChipRow {
+
+                    state: panel.state
                     settingKey: "pillIconMode"
-                    current: Lib.NetState.pillIconMode
-                    options: Lib.NetState.pillIconModeOptions
+                    current: panel.state.pillIconMode
+                    options: panel.state.pillIconModeOptions
                 }
 
                 Lib.StyledText {
@@ -433,9 +455,11 @@ import "lib" as Lib
                 }
 
                 Lib.ChipRow {
+
+                    state: panel.state
                     settingKey: "colorMode"
-                    current: Lib.NetState.colorMode
-                    options: Lib.NetState.colorModeOptions
+                    current: panel.state.colorMode
+                    options: panel.state.colorModeOptions
                 }
 
                 Lib.StyledText {
@@ -445,9 +469,11 @@ import "lib" as Lib
                 }
 
                 Lib.ChipRow {
+
+                    state: panel.state
                     settingKey: "iconColorMode"
-                    current: Lib.NetState.iconColorMode
-                    options: Lib.NetState.iconColorModeOptions
+                    current: panel.state.iconColorMode
+                    options: panel.state.iconColorModeOptions
                 }
 
                 Lib.StepperRow {
@@ -455,11 +481,11 @@ import "lib" as Lib
                     // than the offset, so "18" means 18 pixels and there is
                     // no 0 to puzzle over.
                     label: "Icon size"
-                    value: Lib.NetState.pillIconSize
-                    minimum: Math.max(6, Lib.NetState.pillIconBaseSize + Lib.NetState.iconOffsetMin)
-                    maximum: Math.min(Lib.NetState.pillIconCeiling, Lib.NetState.pillIconBaseSize + Lib.NetState.iconOffsetMax)
+                    value: panel.state.pillIconSize
+                    minimum: Math.max(6, panel.state.pillIconBaseSize + panel.state.iconOffsetMin)
+                    maximum: Math.min(panel.state.pillIconCeiling, panel.state.pillIconBaseSize + panel.state.iconOffsetMax)
                     suffix: "px"
-                    apply: size => Lib.NetState.saveSetting("iconOffset", size - Lib.NetState.pillIconBaseSize)
+                    apply: size => panel.state.saveSetting("iconOffset", size - panel.state.pillIconBaseSize)
                 }
 
                 Lib.StepperRow {
@@ -467,11 +493,11 @@ import "lib" as Lib
                     // venia de la barra de DMS, que en Plasma no existe, asi
                     // que la IP no se podia agrandar de ninguna manera.
                     label: "Text size"
-                    value: Lib.NetState.pillTextSize
-                    minimum: Math.max(6, Lib.NetState.pillTextBaseSize + Lib.NetState.textOffsetMin)
-                    maximum: Math.min(Lib.NetState.pillTextCeiling, Lib.NetState.pillTextBaseSize + Lib.NetState.textOffsetMax)
+                    value: panel.state.pillTextSize
+                    minimum: Math.max(6, panel.state.pillTextBaseSize + panel.state.textOffsetMin)
+                    maximum: Math.min(panel.state.pillTextCeiling, panel.state.pillTextBaseSize + panel.state.textOffsetMax)
                     suffix: "px"
-                    apply: size => Lib.NetState.saveSetting("textOffset", size - Lib.NetState.pillTextBaseSize)
+                    apply: size => panel.state.saveSetting("textOffset", size - panel.state.pillTextBaseSize)
                 }
 
                 Lib.StyledText {
@@ -481,9 +507,11 @@ import "lib" as Lib
                 }
 
                 Lib.ChipRow {
+
+                    state: panel.state
                     settingKey: "latencyMode"
-                    current: Lib.NetState.latencyMode
-                    options: Lib.NetState.latencyModeOptions
+                    current: panel.state.latencyMode
+                    options: panel.state.latencyModeOptions
                 }
             }
         }

@@ -7,8 +7,12 @@
 import QtQuick
 import "../netindicator/contents/ui/lib" as Lib
 
-Item {
-    id: h
+Item {    id: h
+
+
+    // NetState ya no es un singleton: es uno por applet. El test crea el suyo,
+    // igual que main.qml.
+    Lib.NetState { id: estado }
 
     property int checks: 0
     property int failures: 0
@@ -18,7 +22,7 @@ Item {
     }
 
     Component.onCompleted: {
-        const s = Lib.NetState;
+        const s = estado;
 
         // Una VPN levantada y llevando tráfico de verdad.
         s.localInterface = "eno1";

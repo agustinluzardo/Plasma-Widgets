@@ -8,8 +8,12 @@
 import QtQuick
 import "../netindicator/contents/ui/lib" as Lib
 
-Item {
-    id: h
+Item {    id: h
+
+
+    // NetState ya no es un singleton: es uno por applet. El test crea el suyo,
+    // igual que main.qml.
+    Lib.NetState { id: estado }
 
     property int checks: 0
     property int failures: 0
@@ -32,9 +36,9 @@ Item {
         h.expect("el tercero es VPN Netherlands", p[2].name, "VPN Netherlands");
         h.expect("y arranca al boot solo el de US", p.filter(x => x.autoconnect).map(x => x.name).join(), "VPN United States");
         h.expect("la conexion cableada no cuenta como VPN", p.filter(x => x.uuid === "u-wired").length, 0);
-        h.expect("ninguno conectado", Lib.NetState.vpnActiveNames.length, 0);
-        h.expect("pero hay VPN disponible", Lib.NetState.vpnAvailable, true);
-        h.expect("y la IP local llego igual", Lib.NetState.localIp, "192.168.1.39");
+        h.expect("ninguno conectado", estado.vpnActiveNames.length, 0);
+        h.expect("pero hay VPN disponible", estado.vpnAvailable, true);
+        h.expect("y la IP local llego igual", estado.localIp, "192.168.1.39");
 
         // nmcli escapa los dos puntos literales. El nombre tiene que llegar
         // legible, no con la barra invertida a la vista.

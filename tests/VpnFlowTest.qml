@@ -8,8 +8,12 @@ import QtQuick
 import org.kde.plasma.plasma5support as P5
 import "../netindicator/contents/ui/lib" as Lib
 
-Item {
-    id: h
+Item {    id: h
+
+
+    // NetState ya no es un singleton: es uno por applet. El test crea el suyo,
+    // igual que main.qml.
+    Lib.NetState { id: estado }
 
     property int checks: 0
     property int failures: 0
@@ -20,7 +24,7 @@ Item {
     function comandos() { return P5.DsMock.calls.length }
 
     Component.onCompleted: {
-        const S = Lib.NetService, N = Lib.NetState;
+        const S = Lib.NetService, N = estado;
 
         // Un perfil cargado y nada activo.
         S.parseProfiles("u-ok:wireguard:no:VPN Canada:");

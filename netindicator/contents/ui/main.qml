@@ -2,22 +2,30 @@ import QtQuick
 import org.kde.plasma.plasmoid
 import "lib" as Lib
 
-// Only names the two representations and feeds the shared state its settings.
-// Both representations are self-contained files reading the NetState singleton,
-// so no representation reaches into another file's scope.
+// Nombra las dos representaciones y crea EL estado de este applet.
+//
+// NetState no es un singleton: plasmashell corre todos los applets en un solo
+// motor QML, asi que un singleton seria uno para todo el escritorio. Con el
+// widget puesto en dos paneles, el segundo pisaba los ajustes del primero y sus
+// clics escribian en la configuracion del otro. Los hechos de red si son
+// globales y siguen compartidos en NetService.
 PlasmoidItem {
     id: root
 
-    compactRepresentation: NetPill {}
-    fullRepresentation: NetPanel {}
+    // UNO POR APPLET. Antes esto era un singleton, o sea uno para todo el
+    // escritorio: con el widget puesto en dos paneles, el segundo pisaba los
+    // ajustes del primero y sus clics escribian en la configuracion del otro.
+    property QtObject netState: Lib.NetState {}
 
-    toolTipMainText: "Red"
-    toolTipSubText: Lib.NetState.statusText
+    compactRepresentation: NetPill { state: root.netState }
+    fullRepresentation: NetPanel { state: root.netState }
 
-    // The singleton holds the state; this is the one place Plasma's settings
-    // reach it.
+    toolTipMainText: "Network"
+    toolTipSubText: root.netState.statusText
+
+    // El unico sitio por el que los ajustes de Plasma entran al estado.
     Binding {
-        target: Lib.NetState
+        target: root.netState
         property: "pluginData"
         value: ({
         "pillContent": Plasmoid.configuration.pillContent,
@@ -59,17 +67,17 @@ PlasmoidItem {
 
     // isVertical estaba clavado en `false` en NetState y nadie lo movia.
     Binding {
-        target: Lib.NetState
+        target: root.netState
         property: "isVertical"
         value: Plasmoid.formFactor === 3   // PlasmaCore.Types.Vertical
     }
 
     Component.onCompleted: {
-        Lib.NetState.savePluginData = (key, value) => root.saveSetting(key, value);
-        Lib.NetState.refreshAll();
+        root.netState.savePluginData = (key, value) => root.saveSetting(key, value);
+        root.netState.refreshAll();
     }
 
-    onExpandedChanged: if (root.expanded) Lib.NetState.refreshAll()
+    onExpandedChanged: if (root.expanded) root.netState.refreshAll()
 
     function saveSetting(key, value) {
         switch (key) {
