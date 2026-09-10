@@ -7,12 +7,12 @@
             }
         ],
         "Category": "System Information",
-        "Description": "Tu IP local y los perfiles VPN de NetworkManager, desde el panel",
-        "Icon": "network-wired",
+        "Description": "Your local IP and NetworkManager's VPN profiles, from the panel",
+        "Icon": "/images/netindicator.svg",
         "Id": "com.agustinluzardo.netindicator",
         "License": "MIT",
         "Name": "Network Indicator",
-        "Version": "2.4.1"
+        "Version": "2.5.0"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

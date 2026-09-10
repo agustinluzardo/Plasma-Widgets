@@ -242,6 +242,9 @@ for p in netindicator pacman; do
     if [ -n "$bad" ]; then echo "   !! FAIL $p: $bad"; failed=1; else echo "   ok $p"; fi
 done
 
+echo; echo "==> metadatos: icono propio y un solo idioma"
+python3 "$here/check_metadata.py" "$root"/*/metadata.json || failed=1
+
 echo; echo "==> la página de settings se dibuja entera"
 python3 "$here/check_settings_page.py" "$root"/*/contents/ui/configGeneral.qml || failed=1
 

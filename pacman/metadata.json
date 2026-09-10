@@ -8,11 +8,11 @@
         ],
         "Category": "Windows and Tasks",
         "Description": "Virtual desktops as a strip of Pac-Man",
-        "Icon": "preferences-desktop-virtual",
+        "Icon": "/images/pacmanworkspaces.svg",
         "Id": "com.agustinluzardo.pacmanworkspaces",
         "License": "MIT",
         "Name": "Pac-Man Workspaces",
-        "Version": "2.3.2"
+        "Version": "2.4.0"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

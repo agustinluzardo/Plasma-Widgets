@@ -409,3 +409,37 @@ popup** de Network Indicator, que Plasma sólo construye al abrirlo.
 130 ms y el watchdog a 3 s) llevan `root.visible` en su condición de `running`.
 Los de Network Indicator corren sólo mientras hay una operación de VPN en vuelo o
 en el ciclo de refresco configurado.
+
+## Iconos propios
+
+Los dos widgets salían en "Añadir widgets" con iconos prestados del tema —
+un globo genérico y los cuatro cuadrados de `preferences-desktop-virtual`.
+
+Cómo se pone uno propio, verificado en el fuente y no adivinado
+(`plasma-workspace/components/shellprivate/plasmaappletitemmodel.cpp:58-78`):
+Plasma prueba tres cosas en orden — un icono del tema llamado igual que el
+plugin id; después un `Icon` **que empiece con `/`**, que resuelve *dentro del
+paquete* vía `pkg.filePath("", icon)`; y si no, un nombre del tema. Con
+`fileType` vacío, `kpackage/src/kpackage/package.cpp:327,342` arma
+`<paquete>/contents` + `/` + `<icon>`, así que `"/images/x.svg"` cae en
+`contents/images/x.svg`.
+
+El de Pac-Man está dibujado con **la geometría del propio widget**: el arco
+barre 360-2*30 grados y cierra al centro igual que su `ShapePath`, y el fantasma
+lleva los cuatro pies festoneados con las profundidades alternas de
+`footDepth()`. Dos desvíos deliberados: el amarillo no es el `#FFFF00` de la
+cabina y el pellet no es blanco, porque sobre un fondo claro los dos
+desaparecen y el icono tiene que leerse en los dos temas. Renderizados y
+mirados a 96, 32 y 22 px sobre claro y oscuro antes de darlos por buenos.
+
+## Las descripciones, en inglés las dos
+
+La de Network Indicator había quedado en castellano mientras la de Pac-Man
+estaba en inglés, y se veían una al lado de la otra en el diálogo.
+
+`check_metadata.py` lo comprueba, pero su **primera versión no habría servido**:
+buscaba tildes, y la descripción culpable —"Tu IP local y los perfiles VPN de
+NetworkManager, desde el panel"— no tiene ni una. Ahora busca palabras
+funcionales del castellano, que son las que no se pueden esquivar al escribir
+una frase. Falsificada devolviéndole el texto viejo: lo caza por `desde, el,
+los, tu, y`.

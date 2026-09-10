@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pac-Man Workspaces.
+     La geometria es la del widget, no una aproximacion: el arco de Pac-Man
+     barre 360-2*30 grados y cierra al centro, igual que su ShapePath, y el
+     fantasma lleva los cuatro pies festoneados con las profundidades alternas
+     de footDepth().
+     El amarillo NO es el #FFFF00 de la cabina, a proposito: sobre un fondo
+     claro ese amarillo puro casi desaparece, y el icono tiene que leerse en
+     los dos temas. Lo mismo el gris del pellet, que en el widget es blanco. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <path d="M 18.0 32.0 L 30.99 39.50 A 15.0 15.0 0 1 1 30.99 24.50 Z" fill="#FFC400"/>
+  <circle cx="38" cy="32" r="4" fill="#9AA0A6"/>
+  <path d="M 41.00 31.00 A 11.00 11.00 0 0 1 63.00 31.00 L 63.00 42.00 Q 60.25 45.52 57.50 42.00 Q 54.75 43.41 52.00 42.00 Q 49.25 45.52 46.50 42.00 Q 43.75 43.41 41.00 42.00 L 41.00 31.00 Z" fill="#FF453A"/>
+  <circle cx="47.60" cy="29.90" r="3.85" fill="#FFFFFF"/>
+  <circle cx="56.40" cy="29.90" r="3.85" fill="#FFFFFF"/>
+  <circle cx="45.98" cy="30.67" r="1.92" fill="#2121DE"/>
+  <circle cx="54.78" cy="30.67" r="1.92" fill="#2121DE"/>
+</svg>

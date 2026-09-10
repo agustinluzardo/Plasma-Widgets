@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Network Indicator: la pastilla del panel, con el globo a la izquierda y la
+     direccion a la derecha. Los tonos son neutros a proposito para que se lea
+     igual sobre un tema claro y uno oscuro. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="3.5" y="19.5" width="57" height="25" rx="12.5"
+        fill="none" stroke="#7F8C94" stroke-width="2.6"/>
+  <circle cx="19" cy="32" r="8" fill="#3DAEE9"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round">
+    <path d="M 11 32 H 27"/>
+    <path d="M 19 24 C 14.5 27 14.5 37 19 40 C 23.5 37 23.5 27 19 24 Z"/>
+  </g>
+  <rect x="32" y="27.4" width="22" height="3.6" rx="1.8" fill="#7F8C94"/>
+  <rect x="32" y="34" width="14" height="3.6" rx="1.8" fill="#7F8C94"/>
+</svg>
