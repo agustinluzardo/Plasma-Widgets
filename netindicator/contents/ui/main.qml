@@ -4,7 +4,7 @@ import "lib" as Lib
 
 // Only names the two representations and feeds the shared state its settings.
 // Both representations are self-contained files reading the NetState singleton,
-// so nothing crosses into Plasma's representation context.
+// so no representation reaches into another file's scope.
 PlasmoidItem {
     id: root
 
@@ -55,6 +55,13 @@ PlasmoidItem {
         "pingTarget": Plasmoid.configuration.pingTarget,
         "refreshSeconds": Plasmoid.configuration.refreshSeconds
         })
+    }
+
+    // isVertical estaba clavado en `false` en NetState y nadie lo movia.
+    Binding {
+        target: Lib.NetState
+        property: "isVertical"
+        value: Plasmoid.formFactor === 3   // PlasmaCore.Types.Vertical
     }
 
     Component.onCompleted: {

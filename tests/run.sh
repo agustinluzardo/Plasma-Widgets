@@ -29,7 +29,7 @@ for c in PixelTest:/tmp/t-pac.png:--pacman GhostZoom:/tmp/t-ghost.png:--pacman N
     f="${c%%:*}"; rest="${c#*:}"; png="${rest%%:*}"; flag="${rest#*:}"
     out="$(cd "$here" && ./render "$f.qml" "$png" 1800 2>&1 | grep -v XDG_RUNTIME_DIR)"
     echo "$out" | sed 's/^qml: //' | grep -E "PASS|FAIL|^   " | sed 's/^/   /'
-    echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |unavailable|is not a type|Unexpected" && { echo "   !! $f"; failed=1; }
+    echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |unavailable|is not a type|Unexpected|Binding loop" && { echo "   !! $f"; failed=1; }
     n="$(echo "$out" | grep -c "PASS ")"; min="$(floor_for "$f")"
     [ "$n" -lt "$min" ] && { echo "   !! $f solo afirmo $n checks (minimo $min)"; failed=1; }
     python3 "$here/pixels.py" "$png" $flag | sed 's/^/   /' || failed=1
@@ -45,7 +45,7 @@ echo; echo "==> Plasma elige la representacion compacta, y un clic hace algo"
 for f in AppletTest BadgeTest ClickTest; do
     out="$(cd "$here" && ./render "$f.qml" "/tmp/t-${f}.png" 1800 2>&1 | grep -v XDG_RUNTIME_DIR)"
     echo "$out" | sed 's/^qml: //' | grep -E "PASS|FAIL|^   " | sed 's/^/   /'
-    echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |unavailable|is not a type|Unexpected" && { echo "   !! $f"; failed=1; }
+    echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |unavailable|is not a type|Unexpected|Binding loop" && { echo "   !! $f"; failed=1; }
     n="$(echo "$out" | grep -c "PASS ")"; min="$(floor_for "$f")"
     [ "$n" -lt "$min" ] && { echo "   !! $f solo afirmo $n checks (minimo $min)"; failed=1; }
 done
@@ -81,7 +81,7 @@ else
     PATH="$here/fakebin:$PATH" bash /tmp/probe-gen.sh > /tmp/probe-out.txt 2>/dev/null
     vout="$(cd "$here" && QML_XHR_ALLOW_FILE_READ=1 ./render VpnTest.qml /tmp/t-vpn.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
     echo "$vout" | grep -E "PASS|FAIL" | sed 's/^/   /'
-    echo "$vout" | grep -qE "FAIL|QML ERROR" && { echo "   !! VpnTest"; failed=1; }
+    echo "$vout" | grep -qE "FAIL|QML ERROR|Binding loop" && { echo "   !! VpnTest"; failed=1; }
     n="$(echo "$vout" | grep -c "PASS ")"
     [ "$n" -lt 13 ] && { echo "   !! VpnTest solo afirmo $n checks (minimo 13)"; failed=1; }
 
@@ -89,7 +89,7 @@ else
     # así que emitirla en cada lectura deja el widget releyéndose en bucle.
     rout="$(cd "$here" && QML_XHR_ALLOW_FILE_READ=1 ./render RefreshTest.qml /tmp/t-refresh.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
     echo "$rout" | grep -E "PASS|FAIL" | sed 's/^/   /'
-    echo "$rout" | grep -qE "FAIL|QML ERROR" && { echo "   !! RefreshTest"; failed=1; }
+    echo "$rout" | grep -qE "FAIL|QML ERROR|Binding loop" && { echo "   !! RefreshTest"; failed=1; }
     n="$(echo "$rout" | grep -c "PASS ")"
     [ "$n" -lt 8 ] && { echo "   !! RefreshTest solo afirmo $n checks (minimo 8)"; failed=1; }
 fi
@@ -128,7 +128,7 @@ if [ "$lfail" -eq 0 ]; then
     done
     pout="$(cd "$here" && QML_XHR_ALLOW_FILE_READ=1 ./render PublicTest.qml /tmp/t-pub.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
     echo "$pout" | grep -E "PASS|FAIL" | sed 's/^/   /'
-    echo "$pout" | grep -qE "FAIL|QML ERROR" && { echo "   !! PublicTest"; failed=1; }
+    echo "$pout" | grep -qE "FAIL|QML ERROR|Binding loop" && { echo "   !! PublicTest"; failed=1; }
     n="$(echo "$pout" | grep -c "PASS ")"
     [ "$n" -lt 25 ] && { echo "   !! PublicTest solo afirmo $n checks (minimo 25)"; failed=1; }
 fi
@@ -143,7 +143,7 @@ echo; echo "==> la cola de comandos no retiene callbacks ni churnea claves"
 out="$(cd "$here" && ./render LeakTest.qml /tmp/t-leak.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
 rc=$?
 echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
-echo "$out" | grep -qE "FAIL|QML ERROR" && { echo "   !! LeakTest"; failed=1; }
+echo "$out" | grep -qE "FAIL|QML ERROR|Binding loop" && { echo "   !! LeakTest"; failed=1; }
 n="$(echo "$out" | grep -c "PASS ")"
 [ "$n" -lt 8 ] && { echo "   !! LeakTest solo afirmo $n checks (minimo 8) - revisa si el proceso murio"; failed=1; }
 
@@ -184,6 +184,18 @@ for p in netindicator pacman; do
     fi
 done
 
+echo; echo "==> un panel vertical"
+# Los dos originales de DMS declaran un verticalBarPill y el port no se llevó
+# ninguno: la tira salía horizontal, recortada al grosor de la barra. La
+# auditoría de paridad no lo vio porque contaba claves de settings, no
+# capacidades.
+out="$(cd "$here" && ./render VerticalTest.qml /tmp/t-vertical.png 1200 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
+echo "$out" | grep -E "PASS|FAIL|^   " | sed 's/^/   /'
+echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |Binding loop" && { echo "   !! VerticalTest"; failed=1; }
+n="$(echo "$out" | grep -c "PASS ")"
+[ "$n" -lt 12 ] && { echo "   !! VerticalTest solo afirmo $n checks (minimo 12)"; failed=1; }
+python3 "$here/pixels.py" /tmp/t-vertical.png --pacman | sed 's/^/   /' || failed=1
+
 echo; echo "==> perMonitor hace algo"
 # Era un ajuste muerto: estaba en el esquema, en la página y en pluginData, y
 # nadie lo leía. El comentario que lo justificaba decía que Plasma no tiene
@@ -192,7 +204,7 @@ echo; echo "==> perMonitor hace algo"
 # (plasma-desktop/applets/pager/pagermodel.cpp:363).
 out="$(cd "$here" && ./render PerMonitorTest.qml /tmp/t-permonitor.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
 echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
-echo "$out" | grep -qE "FAIL|QML ERROR|Cannot " && { echo "   !! PerMonitorTest"; failed=1; }
+echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |Binding loop" && { echo "   !! PerMonitorTest"; failed=1; }
 n="$(echo "$out" | grep -c "PASS ")"
 [ "$n" -lt 9 ] && { echo "   !! PerMonitorTest solo afirmo $n checks (minimo 9)"; failed=1; }
 
@@ -202,7 +214,7 @@ echo; echo "==> el fondo del slot y los rieles"
 # los rieles ocultos las 19 afirmaciones de propiedades pasaban igual.
 out="$(cd "$here" && ./render BackgroundTest.qml /tmp/t-bg.png 1200 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
 echo "$out" | grep -E "PASS|FAIL|^   " | sed 's/^/   /'
-echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |unavailable|is not a type" && { echo "   !! BackgroundTest"; failed=1; }
+echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |unavailable|is not a type|Binding loop" && { echo "   !! BackgroundTest"; failed=1; }
 n="$(echo "$out" | grep -c "PASS ")"
 [ "$n" -lt 19 ] && { echo "   !! BackgroundTest solo afirmo $n checks (minimo 19)"; failed=1; }
 python3 "$here/pixels.py" /tmp/t-bg.png --pacman --color FF8800 20 | sed 's/^/   /' || failed=1
@@ -215,7 +227,7 @@ echo; echo "==> el flujo de VPN no deja el panel congelado"
 # fallar, el rescate del flag colgado, las dos gracias, y el botón del popout.
 out="$(cd "$here" && ./render VpnFlowTest.qml /tmp/t-vpnflow.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
 echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
-echo "$out" | grep -qE "FAIL|QML ERROR|Cannot " && { echo "   !! VpnFlowTest"; failed=1; }
+echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |Binding loop" && { echo "   !! VpnFlowTest"; failed=1; }
 n="$(echo "$out" | grep -c "PASS ")"
 [ "$n" -lt 18 ] && { echo "   !! VpnFlowTest solo afirmo $n checks (minimo 18)"; failed=1; }
 
@@ -226,7 +238,7 @@ echo; echo "==> el botón del medio hace algo, siempre"
 # ni refrescaba, no hacía nada.
 out="$(cd "$here" && ./render ToggleTest.qml /tmp/t-toggle.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
 echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
-echo "$out" | grep -qE "FAIL|QML ERROR" && { echo "   !! ToggleTest"; failed=1; }
+echo "$out" | grep -qE "FAIL|QML ERROR|Binding loop" && { echo "   !! ToggleTest"; failed=1; }
 n="$(echo "$out" | grep -c "PASS ")"
 [ "$n" -lt 12 ] && { echo "   !! ToggleTest solo afirmo $n checks (minimo 12)"; failed=1; }
 
@@ -238,9 +250,9 @@ echo; echo "==> cambiar de escritorios no colapsa el ancho"
 # esto es para que siga sin pasar.
 out="$(cd "$here" && ./render ResizeTest.qml /tmp/t-resize.png 1500 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
 echo "$out" | grep -E "PASS|FAIL|^   " | sed 's/^/   /'
-echo "$out" | grep -qE "FAIL|QML ERROR" && { echo "   !! ResizeTest"; failed=1; }
+echo "$out" | grep -qE "FAIL|QML ERROR|Binding loop" && { echo "   !! ResizeTest"; failed=1; }
 n="$(echo "$out" | grep -c "PASS ")"
-[ "$n" -lt 4 ] && { echo "   !! ResizeTest solo afirmo $n checks (minimo 4)"; failed=1; }
+[ "$n" -lt 6 ] && { echo "   !! ResizeTest solo afirmo $n checks (minimo 6)"; failed=1; }
 
 echo; echo "==> dentro de un panel de verdad"
 # El test que faltaba: sueltos, implicitWidth alcanza; en un Layout no, y el
@@ -248,7 +260,7 @@ echo; echo "==> dentro de un panel de verdad"
 # defecto - la IP salía cortada y Pac-Man ocupaba espacio sin dibujar.
 out="$(cd "$here" && ./render PanelTest.qml /tmp/t-panel.png 1500 2>&1 | grep -v XDG_RUNTIME_DIR)"
 echo "$out" | sed 's/^qml: //' | grep -E "PASS|FAIL|^   " | sed 's/^/   /'
-echo "$out" | grep -qE "FAIL|QML ERROR" && failed=1
+echo "$out" | grep -qE "FAIL|QML ERROR|Binding loop" && failed=1
 
 echo; echo "==> las representaciones declaran su tamaño"
 for f in "$root"/*/contents/ui/*Pill.qml "$root"/*/contents/ui/*Strip.qml; do

@@ -9,6 +9,7 @@ import QtQuick.Layouts
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
+import org.kde.plasma.core as PlasmaCore
 import "lib" as Lib
 
 // Pac-Man style workspace indicator.
@@ -49,8 +50,15 @@ Item {
         "slotBackgroundColor": Plasmoid.configuration.slotBackgroundColor,
         "mouthPellet": Plasmoid.configuration.mouthPellet
     })
+    // Un panel vertical mide su grosor a lo ANCHO. Los dos originales de DMS
+    // traian un verticalBarPill y el port no se llevo ninguno, asi que la tira
+    // salia horizontal recortada al grosor de la barra.
+    readonly property bool isVertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+
     // The panel's thickness, not a number carried over from the DMS bar.
-    property real barThickness: root.height > 0 ? root.height : 40
+    property real barThickness: root.isVertical
+        ? (root.width > 0 ? root.width : 40)
+        : (root.height > 0 ? root.height : 40)
     property real widgetThickness: 30
     property var barConfig: null
     property string section: "center"
@@ -1096,32 +1104,77 @@ Item {
     // (Changing the count itself does still regenerate the strip - that is how
     // Repeater behaves - but a regenerated Shape draws correctly on its first
     // frame, unlike the Canvas it replaced.)
-    // The strip itself, a direct child rather than a Component handed to a
-    // loader in another context. That indirection is what made this invisible:
-    // Plasma builds a representation in its own context and could not create a
-    // Component defined in this file's scope, so the Loader loaded nothing and
+    // La tira, como hijo directo y no como Component entregado a un Loader.
+    //
+    // ESTE COMENTARIO DECIA OTRA COSA, Y ERA FALSA: que Plasma no puede crear
+    // un Component definido en el scope de otro archivo. No hay tal regla -
+    // AppletQuickItem recibe el QQmlComponent de la representacion y lo
+    // instancia con su propio contexto. La causa real de la invisibilidad esta
+    // verificada y documentada en main.qml: appletShouldBeExpanded() devuelve
+    // true cuando fullRepresentation es null, ANTES de mirar
+    // preferredRepresentation, asi que Plasma pedia una representacion completa
+    // que no existia y no creaba nada.
+    //
+    // Que cada representacion sea su propio archivo sigue siendo buen diseño -
+    // por acoplamiento, no por una limitacion del motor - asi que se queda.
     // reported no error at all.
     // El fondo del slot ocupa sitio, asi que entra en el tamaño que el panel
     // lee. Sin esto el corredor se dibujaria fuera de los limites del applet y
     // el panel lo recortaria.
-    readonly property real stripBoxWidth: stripRow.implicitWidth + (root.hasCorridor ? root.cellSpacing * 2 : 0)
-    readonly property real stripBoxHeight: stripRow.implicitHeight
-        + (root.hasCorridor ? 6 : 0)
+    // El margen del fondo va SIEMPRE sobre el eje corto: el corredor abraza la
+    // tira por sus lados largos, y los rieles son las dos paredes paralelas a
+    // ella. En vertical eso significa intercambiar los ejes, no rotar la tira.
+    readonly property real _crossPad: (root.hasCorridor ? 6 : 0)
         + (root.hasRails ? root.railThickness * 4 : 0)
+    readonly property real _mainPad: root.hasCorridor ? root.cellSpacing * 2 : 0
 
-    implicitWidth: root.stripBoxWidth
-    implicitHeight: Math.max(root.stripBoxHeight, 12)
+    // Un SUELO duro, independiente del backend.
+    //
+    // El tamaño sale del contenido, que sale del modelo, que sale de
+    // WorkspaceService: si el servicio no contesto todavia, la geometria pedida
+    // podria colapsar. `minSlots` ya garantiza al menos un slot, pero atar la
+    // geometria principal al resultado dinamico del modelo es justamente la
+    // forma del sintoma "el applet esta pero no se ve". Esto lo corta: pase lo
+    // que pase, la representacion pide al menos una celda.
+    // El suelo sale del GROSOR DE LA BARRA, que lo fija el panel y es estable,
+    // no de cellSize, que cae junto con todo lo demas durante la reconstruccion
+    // del Repeater. Un suelo que se desploma con lo que tiene que sostener no
+    // sostiene nada.
+    readonly property real _floor: Math.max(10, Math.round(root.barThickness * 0.4))
+
+    readonly property real stripBoxWidth: stripRow.implicitWidth
+        + (root.isVertical ? root._crossPad : root._mainPad)
+    readonly property real stripBoxHeight: stripRow.implicitHeight
+        + (root.isVertical ? root._mainPad : root._crossPad)
+
+    // Mismo motivo que los hints: con fillWidth, implicitWidth tambien
+    // realimenta el ancho del que sale el grosor. En vertical no se declara.
+    implicitWidth: root.isVertical ? 0 : root.stripBoxWidth
+    implicitHeight: root.isVertical ? Math.max(root.stripBoxHeight, 12) : 0
 
     // CÓMO SE DIMENSIONA UNA REPRESENTACIÓN COMPACTA EN PLASMA.
     // El panel la coloca en un Layout y lee Layout.preferredWidth/Height.
     // implicitWidth es apenas el último recurso, y confiar en él es lo que
     // dejó a este widget con un ancho por defecto - texto cortado en uno,
     // espacio vacío sin alto en el otro.
-    Layout.minimumWidth: root.stripBoxWidth
-    Layout.preferredWidth: root.stripBoxWidth
-    Layout.maximumWidth: root.stripBoxWidth
-    Layout.minimumHeight: Math.max(root.stripBoxHeight, 12)
-    Layout.preferredHeight: Math.max(root.stripBoxHeight, 12)
+    // El tope se pone sobre el eje LARGO nada mas. Clavar tambien el corto haria
+    // que en un panel vertical la tira pidiera el ancho de una celda cuando el
+    // contenedor quiere darle el grosor entero de la barra.
+    // En vertical el ancho lo fija el panel, el grosor sale del ancho y el
+    // tamaño de celda sale del grosor. Si ademas el hint de ancho saliera del
+    // contenido, se cierra el circulo - Qt lo detecta como binding loop. El eje
+    // CORTO no opina sobre su propio tamaño: lo recibe.
+    Layout.minimumWidth: root.isVertical ? 0 : Math.max(root._floor, root.stripBoxWidth)
+    Layout.preferredWidth: root.isVertical ? -1 : Math.max(root._floor, root.stripBoxWidth)
+    Layout.maximumWidth: root.isVertical ? Number.POSITIVE_INFINITY : Math.max(root._floor, root.stripBoxWidth)
+    // Simetrico a lo de arriba, y por el mismo motivo. En HORIZONTAL el eje
+    // corto es el alto: si se declara un alto derivado del contenido, el layout
+    // se lo da, el grosor sale de ese alto, el tamaño de celda sale del grosor
+    // y el contenido sale del tamaño de celda. Medido: la altura caia a 12 -el
+    // literal que estaba aqui- y arrastraba el grosor y la celda con ella.
+    Layout.minimumHeight: root.isVertical ? Math.max(root._floor, root.stripBoxHeight, 12) : 0
+    Layout.preferredHeight: root.isVertical ? Math.max(root._floor, root.stripBoxHeight, 12) : -1
+    Layout.maximumHeight: root.isVertical ? Math.max(root._floor, root.stripBoxHeight, 12) : Number.POSITIVE_INFINITY
 
     // ---- why nothing is on screen ---------------------------------------
     // Seven rounds of this failed the same way: it loads, takes space, raises
@@ -1203,7 +1256,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             visible: root.hasCorridor
-            radius: height / 2.6
+            radius: Math.min(width, height) / 2.6
             color: root.slotBackground === "corridorTint" ? Qt.rgba(0, 0, 0, 0.25) : "transparent"
             border.color: root.slotBackground === "corridorTint"
                 ? Qt.rgba(root.corridorColor.r, root.corridorColor.g, root.corridorColor.b, 0.75)
@@ -1214,32 +1267,40 @@ Item {
 
         // Rieles: dos paredes y nada mas, detras de la tira igual que el
         // corredor.
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: root.railThickness
-            radius: height / 2
-            visible: root.hasRails
-            color: root.corridorColor
-            z: -1
+        // Los rieles son las dos paredes paralelas a la tira, asi que en un panel
+        // vertical son izquierda y derecha, no arriba y abajo. DMS no dibuja
+        // fondo en su pill vertical; aqui si, porque un ajuste que en un eje no
+        // hace nada es justo lo que acabamos de arreglar con perMonitor.
+        Repeater {
+            model: 2
+            Rectangle {
+                required property int index
+                readonly property bool primero: index === 0
+
+                anchors.top: (root.isVertical || primero) ? parent.top : undefined
+                anchors.bottom: (root.isVertical || !primero) ? parent.bottom : undefined
+                anchors.left: (!root.isVertical || primero) ? parent.left : undefined
+                anchors.right: (!root.isVertical || !primero) ? parent.right : undefined
+                width: root.isVertical ? root.railThickness : undefined
+                height: root.isVertical ? undefined : root.railThickness
+                radius: root.railThickness / 2
+                visible: root.hasRails
+                color: root.corridorColor
+                z: -1
+            }
         }
 
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: root.railThickness
-            radius: height / 2
-            visible: root.hasRails
-            color: root.corridorColor
-            z: -1
-        }
-
-        Row {
+        // Un Grid, no un Row y un Column. DMS instancia los dos y esconde uno
+        // -su propio delegate lo dice: "Both bar pills are instantiated at
+        // once"- pero eso duplica un Shape por slot, y acabamos de auditar la
+        // memoria. Un Grid con filas y columnas explicitas es el mismo
+        // posicionador en los dos ejes.
+        Grid {
             id: stripRow
             anchors.centerIn: parent
             spacing: root.cellSpacing
+            rows: root.isVertical ? root.slotCount : 1
+            columns: root.isVertical ? 1 : root.slotCount
 
             WorkspaceWheel {}
 

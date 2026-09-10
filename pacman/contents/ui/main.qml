@@ -4,7 +4,7 @@ import "lib" as Lib
 
 // Pac-Man Workspaces. Only names the representations; each one is a
 // self-contained file that reads WorkspaceService and Plasmoid.configuration
-// itself, so nothing crosses into Plasma's representation context.
+// itself, so no representation reaches into another file's scope.
 //
 // BOTH representations are declared on purpose, and the widget is invisible
 // without the full one. libplasma's appletShouldBeExpanded() opens with

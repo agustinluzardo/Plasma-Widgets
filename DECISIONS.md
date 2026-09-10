@@ -495,3 +495,57 @@ quedaría recortada.
 Y expone un punto ciego de la auditoría anterior: medí la paridad contando
 **claves de settings**, no capacidades. Por eso dio 21/21 y 33/33 y aun así
 faltaba una función entera.
+
+## Panel vertical, y una revisión externa que acertó dos cosas
+
+**El modo vertical estaba perdido.** Los dos originales de DMS declaran un
+`verticalBarPill` (`PacmanWorkspaces.qml:1262`, `NetIndicator.qml:849`) y el
+port no se llevó ninguno. Ahora los dos miran `Plasmoid.formFactor`.
+
+Un `Grid` con filas y columnas explícitas en vez de un `Row` y un `Column`: DMS
+instancia los dos y esconde uno -su propio delegate lo dice- pero eso duplica un
+`Shape` por slot, y la auditoría de memoria acababa de contarlos. `Grid` **no
+admite anchors en sus hijos** (a diferencia de `Row`, que sólo coloca en X y deja
+libre el eje Y); la alineación va en el `Grid`. Los rieles rotan: son las paredes
+paralelas a la tira, así que en vertical son izquierda y derecha.
+
+**El eje corto no puede opinar sobre su propio tamaño.** En vertical el ancho lo
+fija el panel, el grosor sale del ancho, la celda del grosor y el contenido de la
+celda: si además el hint de ancho sale del contenido, se cierra el círculo. Qt lo
+reportó como binding loop. Y **existía la misma realimentación en horizontal
+sobre la altura**, silenciosa: medida, la altura llegaba a caer a 12 -el literal
+que estaba en `Layout.minimumHeight`- arrastrando grosor y celda. `run.sh`
+falla ahora ante cualquier `Binding loop` en cualquier render.
+
+### La revisión externa
+
+Acertó dos de siete, y las dos importaban.
+
+**Acertó:** los comentarios que atribuían la invisibilidad a que Plasma "no puede
+crear un `Component` del scope de otro archivo" **eran falsos** y seguían en tres
+archivos, mientras la causa verificada -`appletShouldBeExpanded()`- estaba
+documentada al lado. Corregidos.
+
+**Acertó:** que atar la geometría al resultado del modelo es peligroso. Mi
+medición anterior decía que no pasaba, y **estaba submuestreada**. El suelo que
+agregué por su sugerencia fue lo que destapó el bajón real, que resultó ser la
+realimentación de eje cruzado de arriba.
+
+**No acertó, con fuente:** que `org.kde.kwin` sea alternativa. Es la API de
+scripting de KWin, dentro del proceso de KWin: **ningún applet de Plasma la
+importa** (los aciertos del grep son `org.kde.kwindowsystem`, otra cosa). Y el
+Pager cambia de escritorio con `virtualDesktopInfo->requestActivate()` **en C++**
+(`pagermodel.cpp:500`) porque es un applet compilado; un plasmoid sólo-QML no
+tiene ese camino, que es exactamente por lo que aquí se usa DBus.
+
+**No acertó, con fuente:** que el clic del medio no sea la convención de Plasma.
+`DefaultCompactRepresentation.qml` hace literalmente
+`if (mouse.button === Qt.MiddleButton) Plasmoid.secondaryActivated();`.
+
+**Discutible, no error:** `min == preferred == max` en el eje largo es
+deliberado -el contenedor del panel calcula
+`Math.min(applet.Layout.maximumWidth, Layout.preferredWidth)` y una pastilla
+dimensionada por contenido quiere exactamente su ancho- y ya está relajado en el
+eje corto. `TasksModel` no es opcional: las cuentas de ventanas alimentan el
+pellet de escritorio ocupado, que está activo por defecto; ya vive tras un
+`Loader` para que su fallo no se lleve el widget.

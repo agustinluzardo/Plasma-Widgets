@@ -3,11 +3,16 @@ import QtQuick.Layouts
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
+import org.kde.plasma.core as PlasmaCore
 import "lib" as Lib
 
-// What shows in the panel. This is the DMS pill, unchanged, with its root moved
-// out of the Component it used to sit inside - Plasma builds a representation
-// in its own context and cannot create a Component from another file's scope.
+// Lo que se ve en el panel: la pastilla de DMS, con su raiz sacada del
+// Component en el que vivia.
+//
+// El motivo que estaba escrito aqui era falso ("Plasma no puede crear un
+// Component del scope de otro archivo"). No existe esa limitacion. Lo que hacia
+// invisible al otro widget esta verificado en pacman/contents/ui/main.qml.
+// Sacar la raiz del Component sigue valiendo por acoplamiento, no por eso.
 Item {
     id: pill
 
@@ -54,7 +59,7 @@ Item {
     // The pill is a Row, and a MouseArea anchored to fill cannot be a child of
     // one - it breaks the layout outright. So the Row lives inside an Item that
     // sizes to it, and the mouse area is the Item's, not the Row's.
-    implicitWidth: pillRow.implicitWidth
+    implicitWidth: pill.isVertical ? 0 : pillRow.implicitWidth
     implicitHeight: pillRow.implicitHeight
 
     // CÓMO SE DIMENSIONA UNA REPRESENTACIÓN COMPACTA EN PLASMA.
@@ -62,24 +67,36 @@ Item {
     // implicitWidth es apenas el último recurso, y confiar en él es lo que
     // dejó a este widget con un ancho por defecto - texto cortado en uno,
     // espacio vacío sin alto en el otro.
-    Layout.minimumWidth: pillRow.implicitWidth
-    Layout.preferredWidth: pillRow.implicitWidth
-    Layout.maximumWidth: pillRow.implicitWidth
+    Layout.minimumWidth: pill.isVertical ? 0 : pillRow.implicitWidth
+    Layout.preferredWidth: pill.isVertical ? -1 : pillRow.implicitWidth
+    Layout.maximumWidth: pill.isVertical ? Number.POSITIVE_INFINITY : pillRow.implicitWidth
     Layout.minimumHeight: pillRow.implicitHeight
     Layout.preferredHeight: pillRow.implicitHeight
+    Layout.maximumHeight: pill.isVertical ? pillRow.implicitHeight : Number.POSITIVE_INFINITY
 
-    Row {
+    // En un panel vertical la direccion no entra: el original de DMS apila el
+    // icono (o la bandera) y el de VPN, y deja el texto fuera
+    // (NetIndicator.qml:849). Un Grid sirve para los dos ejes sin instanciar
+    // dos pastillas.
+    readonly property bool isVertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+
+    Grid {
         id: pillRow
         anchors.centerIn: parent
+        // Cinco hijos. Con columns: 4 el quinto se iba a una segunda fila y la
+        // pastilla se partia en dos. En horizontal no hay tope de columnas.
+        rows: pill.isVertical ? 5 : 1
+        columns: pill.isVertical ? 1 : 5
+        verticalItemAlignment: Grid.AlignVCenter
+        horizontalItemAlignment: Grid.AlignHCenter
 
-        spacing: (Lib.NetState.showIcon || Lib.NetState.vpnShownInPill) && Lib.NetState.pillText !== "" ? Lib.Theme.spacingXS : 0
+        spacing: (Lib.NetState.showIcon || Lib.NetState.vpnShownInPill) && Lib.NetState.pillText !== "" && !pill.isVertical ? Lib.Theme.spacingXS : 0
 
         Lib.DankIcon {
             visible: Lib.NetState.showIcon && !Lib.NetState.pillShowsFlag
             name: Lib.NetState.privacyMode ? "visibility_off" : Lib.NetState.iconName
             size: Lib.NetState.pillIconSize
             color: Lib.NetState.effectiveIconColor
-            anchors.verticalCenter: parent.verticalCenter
         }
 
         Lib.StyledText {
@@ -88,7 +105,6 @@ Item {
             font.family: Lib.NetState.flagFontFamily
             // Sized to sit on the same optical line as the icon it replaces.
             font.pixelSize: Lib.NetState.pillIconSize
-            anchors.verticalCenter: parent.verticalCenter
         }
 
         Lib.DankIcon {
@@ -96,24 +112,21 @@ Item {
             name: Lib.NetState.vpnIconName
             size: Lib.NetState.pillIconSize
             color: Lib.NetState.tintPillWhenVpn ? Lib.Theme.success : Lib.NetState.pillIconColor
-            anchors.verticalCenter: parent.verticalCenter
         }
 
         Lib.StyledText {
-            visible: Lib.NetState.vpnShownInPill && Lib.NetState.showVpnName
+            visible: !pill.isVertical && Lib.NetState.vpnShownInPill && Lib.NetState.showVpnName
             text: Lib.NetState.vpnLabel
             color: Lib.NetState.tintPillWhenVpn ? Lib.Theme.success : Lib.NetState.pillTextColor
             font.pixelSize: Lib.NetState.pillTextSize
-            anchors.verticalCenter: parent.verticalCenter
         }
 
         Lib.StyledText {
-            visible: Lib.NetState.pillText !== ""
+            visible: !pill.isVertical && Lib.NetState.pillText !== ""
             text: Lib.NetState.pillText
             color: Lib.NetState.pillTextColor
             font.pixelSize: Lib.NetState.pillTextSize
             isMonospace: Lib.NetState.monospace
-            anchors.verticalCenter: parent.verticalCenter
         }
     }
 
