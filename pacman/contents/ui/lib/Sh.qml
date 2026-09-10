@@ -11,8 +11,13 @@ import org.kde.plasma.plasma5support as Plasma5Support
 //
 // The engine is keyed by the command string: connectSource(cmd) starts it and
 // onNewData arrives with sourceName === cmd. Two identical commands in flight
-// at once would therefore be indistinguishable, so callbacks are queued per
-// command and answered in order.
+// are therefore ONE source and produce ONE reply - not two - so that reply is
+// the answer for everyone who asked, and the whole queue is drained with it.
+//
+// This used to shift() a single callback per reply, on the assumption that a
+// second identical command would bring a second reply. It does not: the second
+// caller was never answered and its entry stayed in the map for the life of the
+// session. Two fast clicks on the same workspace were enough.
 QtObject {
     id: sh
 
@@ -28,12 +33,29 @@ QtObject {
             const queue = sh._pending[sourceName];
             if (!queue || queue.length === 0)
                 return;
-            const cb = queue.shift();
-            if (queue.length === 0)
-                delete sh._pending[sourceName];
 
-            if (cb)
-                cb(data["stdout"] || "", data["stderr"] || "", data["exit code"] ?? 0);
+            // La cola se VACIA EN SITIO con splice, y la clave no se borra
+            // nunca. Dos motivos:
+            //
+            // 1. Un callback puede volver a lanzar el mismo comando. Sacar los
+            //    pendientes de una antes de llamar a nadie deja el sitio limpio
+            //    para esa segunda tanda sin perderla.
+            // 2. Insertar y borrar claves a repeticion sobre un objeto JS
+            //    guardado en una propiedad `var` revienta el motor: Qt 6.4 se
+            //    va a SIGSEGV en QV4::Object::insertMember despues de unos
+            //    cientos de ciclos. Las claves se insertan una vez por comando
+            //    distinto y se quedan; el conjunto de comandos distintos es
+            //    finito, asi que el mapa no crece.
+            const pend = queue.splice(0, queue.length);
+
+            const out = data["stdout"] || "";
+            const err = data["stderr"] || "";
+            const code = data["exit code"] ?? 0;
+            for (let i = 0; i < pend.length; i++) {
+                const cb = pend[i];
+                if (cb)
+                    cb(out, err, code);
+            }
         }
     }
 

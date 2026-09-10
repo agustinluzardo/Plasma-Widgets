@@ -12,7 +12,7 @@
         "Id": "com.agustinluzardo.pacmanworkspaces",
         "License": "MIT",
         "Name": "Pac-Man Workspaces",
-        "Version": "2.3.1"
+        "Version": "2.3.2"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

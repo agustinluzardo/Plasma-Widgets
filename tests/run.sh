@@ -133,6 +133,20 @@ if [ "$lfail" -eq 0 ]; then
     [ "$n" -lt 25 ] && { echo "   !! PublicTest solo afirmo $n checks (minimo 25)"; failed=1; }
 fi
 
+echo; echo "==> la cola de comandos no retiene callbacks ni churnea claves"
+# Dos cosas en un solo sitio. El motor ejecutable deduplica por nombre de
+# source: dos comandos idénticos en vuelo son UNA respuesta, no dos, así que
+# contestar a uno solo dejaba al resto huérfano para toda la sesión. Y borrar
+# claves de un objeto JS guardado en una propiedad `var` a repetición revienta
+# el motor - Qt 6.4 se va a SIGSEGV en QV4::Object::insertMember tras unos
+# cientos de ciclos. Se vacía la cola en sitio y la clave se queda.
+out="$(cd "$here" && ./render LeakTest.qml /tmp/t-leak.png 900 2>&1 | grep -v XDG_RUNTIME_DIR | sed 's/^qml: //')"
+rc=$?
+echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
+echo "$out" | grep -qE "FAIL|QML ERROR" && { echo "   !! LeakTest"; failed=1; }
+n="$(echo "$out" | grep -c "PASS ")"
+[ "$n" -lt 8 ] && { echo "   !! LeakTest solo afirmo $n checks (minimo 8) - revisa si el proceso murio"; failed=1; }
+
 echo; echo "==> ningún comando de shell se arma con JSON.stringify"
 # JSON.stringify produce comillas DOBLES, y dentro de comillas dobles el shell
 # sigue interpolando $, ` y \. El destino del ping es un campo de texto libre en

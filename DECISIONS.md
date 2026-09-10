@@ -355,3 +355,57 @@ como estaban ES la respuesta correcta.
 DMS (`parentScreen`, `section`, `pluginId`, `widgetThickness` en Pac-Man) y
 varias de la capa `Theme` que estos dos widgets no usan. Son inertes; borrarlas
 es churn con riesgo y sin beneficio observable.
+
+## Auditoría de memoria
+
+**Un leak real, en `Sh._pending` (arreglado).** La cola de callbacks por comando
+llevaba escrito su propio supuesto: *"dos comandos idénticos en vuelo serían
+indistinguibles, así que los callbacks se encolan y se contestan en orden"*. El
+supuesto es falso. El motor ejecutable de Plasma **deduplica por nombre de
+source**: dos comandos idénticos en vuelo son UN source y producen UNA respuesta,
+no dos. Se hacía `shift()` de un callback y el resto quedaba huérfano, con su
+clave viva en el mapa para toda la sesión. Dos clics rápidos sobre el mismo
+escritorio alcanzaban. Ahora la respuesta se reparte a todos los que preguntaron.
+
+**Y un SIGSEGV encontrado al arreglarlo.** La primera versión del arreglo
+borraba la clave con `delete` en cada respuesta. Eso crashea el motor:
+
+```
+QV4::Runtime::StoreElement → Object::internalPut → Object::insertMember → SIGSEGV
+```
+
+Insertar y borrar claves a repetición sobre un objeto JS guardado en una
+propiedad `var` corrompe la tabla interna de V4; en Qt 6.4 revienta tras unos
+cientos de ciclos. Reproducido, acotado con `gdb`, y falsificado: con `delete`
+crashea a los ~200 comandos, con `splice` aguanta 2000. La cola se vacía **en
+sitio** y la clave no se borra nunca — el conjunto de comandos distintos es
+finito, así que el mapa no crece. (El usuario corre Qt 6.11, donde puede que no
+se manifieste; el patrón se evita igual.)
+
+**Fugas en marcha: ninguna.** Estrés con muestreo de `VmRSS`, mucho más duro que
+el uso real:
+
+| | carga | 60 s |
+|---|---|---|
+| Pac-Man | un cambio de escritorio cada 80 ms (750 reconstrucciones) | **+328 kB** |
+| Network Indicator | sonda + lookup completos cada 40 ms (1500 ciclos) | **+108 kB** |
+
+En la realidad Network Indicator hace **un** ciclo cada 300 s. Los dos son ruido
+de heap que el GC recupera, no retención.
+
+**El instrumento mentía primero.** La primera medición daba 6.2 MB de "fuga" en
+Network Indicator. Eran del mock: `DsMock.calls` crecía sin límite y se copiaba
+entero en cada `concat`, o sea O(n²). Acotado el log, la fuga desapareció. Medir
+con un instrumento que no se auditó no es medir.
+
+**Consumo.** ~10 MB por widget en un proceso frío, y la mayor parte es cargar los
+módulos QML que cada uno importa por primera vez (`QtQuick.Shapes`,
+`QtQuick.Layouts`, los singletons). Dentro de plasmashell esos módulos ya están
+cargados, así que el costo marginal real es bastante menor. Los dos deltas
+limpios sí son atribuibles: **~200 kB por slot extra** de Pac-Man, y **~5.6 MB el
+popup** de Network Indicator, que Plasma sólo construye al abrirlo.
+
+**Timers: todos gateados.** Los dos repetitivos de Pac-Man (el reloj de sprites a
+130 ms y el watchdog a 3 s) llevan `root.visible` en su condición de `running`.
+Los de Network Indicator corren sólo mientras hay una operación de VPN en vuelo o
+en el ciclo de refresco configurado.
