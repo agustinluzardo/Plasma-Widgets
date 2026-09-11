@@ -280,7 +280,7 @@ out="$(cd "$here" && ./render OffScreenTest.qml /tmp/t-offscreen.png 2600 2>&1 |
 echo "$out" | grep -E "PASS|FAIL" | sed 's/^/   /'
 echo "$out" | grep -qE "FAIL|QML ERROR|Cannot |Binding loop" && { echo "   !! OffScreenTest"; failed=1; }
 n="$(echo "$out" | grep -c "PASS ")"
-[ "$n" -lt 13 ] && { echo "   !! OffScreenTest solo afirmo $n checks (minimo 13)"; failed=1; }
+[ "$n" -lt 16 ] && { echo "   !! OffScreenTest solo afirmo $n checks (minimo 16)"; failed=1; }
 
 echo; echo "==> dentro de un panel de verdad"
 # El test que faltaba: sueltos, implicitWidth alcanza; en un Layout no, y el

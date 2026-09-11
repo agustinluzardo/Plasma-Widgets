@@ -32,6 +32,13 @@ Rectangle {
     // la que vive en el panel, asi que es la que le dice al estado si se ve.
     NL.NetState { id: estado }
 
+    // El caso que NO tiene que parar: el widget en el escritorio (formato
+    // Planar), donde Plasma no crea representacion compacta y por lo tanto no
+    // hay NetPill que cablee nada. El valor de fabrica tiene que dejar la sonda
+    // corriendo; un default al reves apagaria la sonda del widget de escritorio
+    // para siempre y sin un solo error.
+    NL.NetState { id: suelto }
+
     RowLayout {
         anchors.fill: parent
         P.PacmanStrip { id: tira; Layout.fillHeight: true }
@@ -53,6 +60,8 @@ Rectangle {
             h.expect("y el reloj de sprites corre", tira.spriteClockRunning, true);
             h.expect("Item.visible tambien es true", tira.visible, true);
             h.expect("y la sonda de red corre", estado.refreshTimerRunning, true);
+            h.expect("un estado sin pastilla se considera a la vista", suelto.onScreen, true);
+            h.expect("y su sonda corre igual", suelto.refreshTimerRunning, true);
 
             // Para poder distinguir "no refresco porque no se ve" de "no
             // refresco porque no toca": se marca como recien sondeado.
@@ -72,6 +81,7 @@ Rectangle {
             h.expect("pero onScreen si", tira.onScreen, false);
             h.expect("y el reloj de sprites para", tira.spriteClockRunning, false);
             h.expect("y la sonda de red tambien", estado.refreshTimerRunning, false);
+            h.expect("pero el del escritorio sigue sondeando", suelto.refreshTimerRunning, true);
 
             h.Window.window.visible = true;
             paso3.start();

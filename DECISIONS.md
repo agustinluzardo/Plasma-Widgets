@@ -678,3 +678,37 @@ así queda dicho, como mecanismo y no como medición.
 
 De paso se cayó el `onVisibleChanged` de Pac-Man, que hacía el mismo `resync()`:
 `onScreen` ya depende de `visible`, así que eran dos handlers para un caso.
+
+**¿Y el arreglo, cuánto cuesta?** La pregunta correcta, porque un gate mal puesto
+puede salir más caro que lo que ahorra. Medido con el árbol de antes (`938e8cc`)
+y el de después corriendo el MISMO QML, alternados para que la deriva de la
+máquina no se cargue de un solo lado, con el panel **a la vista** -el caso donde
+el gate no ahorra nada y sólo podría costar-:
+
+| ventana de 60 s | jiffies (antes) | jiffies (después) |
+|---|---|---|
+| Pac-Man | 24 | 24 |
+| Pac-Man | 23 | 23 |
+
+Y NetIndicator marca **0 jiffies en los dos**, que es lo esperable: su sonda
+viene cada 300 s de fábrica y no llega a dispararse en la ventana de medición.
+La diferencia es cero, no "pequeña": el `onScreen` es un binding que sólo se
+reevalúa cuando cambia `visible` o la visibilidad de la ventana, y ninguna de las
+dos cambia mientras el panel está quieto.
+
+La RSS se movió ~150 kB para arriba en tres corridas de Pac-Man, lo que me hizo
+mirar el `import QtQuick.Window` nuevo. En NetIndicator la misma medición se
+movió para los dos lados (una corrida dio 376 kB **menos** después), así que es
+ruido del asignador. Y aunque no lo fuera, en plasmashell no se paga: el módulo
+ya está cargado antes de que mi widget lo toque -lo importan el containment del
+panel (`plasma-desktop/containments/panel/ConfigOverlay.qml`), el explorador de
+widgets y `plasmacomponents3/Menu.qml` de libplasma-.
+
+**El riesgo real no era la CPU sino apagar algo que tenía que seguir.** Dos casos
+donde el gate NO debe morder, y los dos están afirmados: un estado sin `NetPill`
+-el widget puesto en el escritorio, donde Plasma no crea representación compacta
+y no hay quien cablee nada- tiene que sondear igual, incluso mientras la ventana
+del panel de al lado está escondida; y el valor de fábrica de `onScreen` tiene
+que ser `true`, porque un default al revés dejaría el widget de escritorio sin
+sondear para siempre y sin un solo error. Falsificado poniéndolo en `false`:
+tres fallas.
