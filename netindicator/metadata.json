@@ -12,7 +12,7 @@
         "Id": "com.agustinluzardo.netindicator",
         "License": "MIT",
         "Name": "Network Indicator",
-        "Version": "3.0.0"
+        "Version": "3.1.0"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

@@ -6,6 +6,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
@@ -53,6 +54,28 @@ Item {
     // Un panel vertical mide su grosor a lo ANCHO. Los dos originales de DMS
     // traian un verticalBarPill y el port no se llevo ninguno, asi que la tira
     // salia horizontal recortada al grosor de la barra.
+    // "Se me esta viendo de verdad", que NO es lo mismo que Item.visible.
+    //
+    // Medido: escondiendo la ventana -que es lo que hace PanelView::setVisible
+    // (false) al auto-ocultar el panel o al esquivar ventanas- `item.visible`
+    // se queda en `true`. Asi que gatear los relojes solo con `visible` los
+    // dejaba animando detras de un panel que no esta.
+    //
+    // El caso de una ventana a pantalla completa TAPANDO un panel siempre
+    // visible no se puede ver desde QML: la ventana del panel sigue mapeada y
+    // visible. Ahi el coste medido es 0,5-1,5% de un nucleo y no hay señal que
+    // mirar, asi que no se intenta adivinar.
+    readonly property bool onScreen: root.visible
+        && (root.Window.window ? root.Window.window.visible : true)
+
+    // Al volver a verse, refrescar: mientras estuvo escondida el watchdog no
+    // corrio y el compositor pudo cambiar de escritorio.
+    onOnScreenChanged: if (root.onScreen) Qt.callLater(root.resync)
+
+    // Expuesto para que un test pueda afirmar que el reloj para de verdad, en
+    // vez de conformarse con que la propiedad que lo gatea cambie.
+    readonly property alias spriteClockRunning: spriteClock.running
+
     readonly property bool isVertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
 
     // The panel's thickness, not a number carried over from the DMS bar.
@@ -319,7 +342,7 @@ Item {
     property real smoothPhase: 0
 
     SequentialAnimation {
-        running: root.animationsOn && root.smoothAnimation && root.visible && true /* Plasma exposes no sleep flag to QML */
+        running: root.animationsOn && root.smoothAnimation && root.onScreen /* ver onScreen: Item.visible no basta */
         loops: Animation.Infinite
 
         NumberAnimation {
@@ -349,9 +372,10 @@ Item {
     readonly property real mouthRestDeg: 30
 
     Timer {
+        id: spriteClock
         interval: 130
         repeat: true
-        running: root.animationsOn && !root.smoothAnimation && root.visible && true /* Plasma exposes no sleep flag to QML */
+        running: root.animationsOn && !root.smoothAnimation && root.onScreen /* ver onScreen: Item.visible no basta */
         onTriggered: root.spriteFrame = (root.spriteFrame + 1) % 4
         onRunningChanged: {
             if (!running)
@@ -656,11 +680,6 @@ Item {
         })
     }
 
-    onVisibleChanged: {
-        if (root.visible)
-            Qt.callLater(root.resync)
-    }
-
     // Cheap self-healing watchdog. It hashes the live compositor state and only
     // bumps the revision when that hash disagrees with what we last drew, so it
     // costs nothing while events are flowing and still repairs the widget within
@@ -684,7 +703,7 @@ Item {
         interval: 3000
         repeat: true
         triggeredOnStart: true
-        running: root.visible && true /* Plasma exposes no sleep flag to QML */
+        running: root.onScreen /* ver onScreen: Item.visible no basta */
         onTriggered: {
             const sig = root.stateSignature()
             if (sig === root.lastStateSignature)

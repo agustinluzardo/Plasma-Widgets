@@ -1031,6 +1031,7 @@ Item {
     }
 
     function refreshAll() {
+        root.lastRefreshMs = Date.now()
         root.refreshLocal()
         root.refreshPublic()
         // The profile list was never asked to refresh, so a profile whose
@@ -1039,12 +1040,41 @@ Item {
         root.refreshVpn()
     }
 
+    // "Se me esta viendo", que no es lo mismo que `visible`. Cuando el panel se
+    // auto-oculta o esquiva una ventana, PanelView esconde la VENTANA y
+    // `Item.visible` se queda en `true` (medido; ver DECISIONS.md). Aqui pesa
+    // mas que en Pac-Man: cada ciclo lanza nmcli, ip y curl, asi que sondear
+    // detras de un panel escondido son procesos enteros a cambio de nada.
+    // NetPill lo cablea desde el panel; suelto se queda en true.
+    //
+    // Una ventana a pantalla completa TAPANDO un panel siempre visible no se
+    // puede ver desde QML, y no se intenta adivinar.
+    property bool onScreen: true
+
+    // Cuando corrio el ultimo ciclo. Sin esto, reaparecer dispararia una sonda:
+    // un panel con auto-ocultar se muestra cada vez que el puntero roza el
+    // borde, y refrescar en cada una seria MAS trabajo que el temporizador. Con
+    // esto solo se recupera el tick que se perdio.
+    property double lastRefreshMs: 0
+
+    onOnScreenChanged: {
+        if (!root.onScreen || root.refreshSeconds <= 0)
+            return
+        if (Date.now() - root.lastRefreshMs >= Math.max(15, root.refreshSeconds) * 1000)
+            Qt.callLater(root.refreshAll)
+    }
+
     Timer {
+        id: refreshTimer
         interval: Math.max(15, root.refreshSeconds) * 1000
         repeat: true
-        running: root.refreshSeconds > 0
+        running: root.refreshSeconds > 0 && root.onScreen
         onTriggered: root.refreshAll()
     }
+
+    // Expuesto para que un test pueda afirmar que la sonda para de verdad, en
+    // vez de conformarse con que la condicion que la gatea haya cambiado.
+    readonly property alias refreshTimerRunning: refreshTimer.running
 
     // A reconnect changes the facts underneath us, so re-read rather than
     // waiting for the next tick.

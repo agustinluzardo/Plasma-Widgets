@@ -590,3 +590,91 @@ not creatable").
 Lo que **no** puedo demostrar desde aquí es el congelamiento del escritorio: no
 tengo cómo reproducir una tormenta de bindings en plasmashell. La explicación
 encaja con el mecanismo, pero es una explicación, no una medición.
+
+## Parar cuando no se ve (y qué parte de eso Plasma no te deja ver)
+
+La pregunta era si conviene que el widget pare en pantalla completa o si Plasma
+ya lo hace solo. Son **dos** casos distintos y sólo uno se puede resolver.
+
+**Lo que Plasma hace solo.** Nada, para un panel siempre visible. El panel es una
+ventana propia (`PanelView`); una ventana a pantalla completa simplemente la
+**tapa**. La ventana del panel sigue mapeada y visible, el compositor le sigue
+mandando frames, y desde QML no hay ninguna propiedad que diga "estoy debajo de
+otra cosa". No hay señal que mirar, así que no se intenta adivinar. Medido, ese
+caso cuesta:
+
+| | CPU de un núcleo |
+|---|---|
+| un `Rectangle` vacío, mismo render | 0% |
+| la tira animando (rasterizador por software) | 0,43% (hasta 1,56% en una corrida con carga) |
+
+Sobre hardware real, con la GPU haciendo el trabajo, es menos. Es ruido: no vale
+la pena inventar heurísticas -consultar KWin por DBus cada tanto, mirar la
+ventana activa- para ganar medio punto de un núcleo, y cada una de esas
+heurísticas es un temporizador nuevo que *sí* corre siempre.
+
+**Lo que sí se podía arreglar, y estaba mal.** El panel con auto-ocultar, o con
+"esquivar ventanas", **esconde la ventana**: `PanelView::setVisible(false)`. Ese
+caso sí es visible desde QML... pero no por donde yo lo estaba mirando. Los tres
+relojes de la tira se gateaban con `root.visible`, y **`Item.visible` se queda en
+`true` cuando la ventana se esconde**. No es una suposición: lo comprobé con un
+QML mínimo (`/tmp/WinVis.qml`) que imprime las dos propiedades mientras oculta su
+propia ventana -`item.visible=true`, `window.visible=false`-.
+
+O sea que la tira seguía animando a 130 ms detrás de un panel que no estaba en
+pantalla, y el comentario que acompañaba al gate (*"Plasma exposes no sleep flag
+to QML"*) tapaba el agujero: era verdad sobre el caso de pantalla completa y
+falso sobre éste.
+
+El arreglo es una propiedad y nada más:
+
+```qml
+readonly property bool onScreen: root.visible
+    && (root.Window.window ? root.Window.window.visible : true)
+```
+
+Los dos relojes de animación y el watchdog de 3 s pasan a colgar de `onScreen`.
+Al volver a verse se dispara un `resync()`: mientras estuvo escondida el watchdog
+no corrió y el compositor pudo cambiar de escritorio, así que el primer frame
+tiene que ser el estado de ahora, no el de hace un rato. El `?:` deja el
+comportamiento anterior cuando no hay ventana todavía (los tests instancian la
+tira suelta).
+
+Medido con la ventana escondida: **0% y 0%**, contra 0,43% visible.
+
+`OffScreenTest.qml` afirma las tres cosas en secuencia -a la vista corre;
+escondida, `Item.visible` sigue en `true` pero `onScreen` es `false` y el reloj
+de sprites **no** corre; al volver, arranca de nuevo-. Afirma sobre
+`spriteClock.running` expuesto como alias, no sobre la propiedad que lo gatea:
+un test que se conforma con "la condición cambió" pasa igual si el `running` no
+está cableado. Falsificado devolviendo el gate a `root.visible`: `FAIL y el reloj
+de sprites para = true (esperado false)`.
+
+**NetIndicator, donde pesa más.** Al revisar sus temporizadores esperaba no
+encontrar nada -sus animaciones dependen de `Behavior` sobre cambios, no de un
+reloj libre, y el resto son one-shots que dispara una acción-. Pero el de la
+sonda periódica corría igual, y ahí lo que se gasta no son repintados: cada ciclo
+lanza `nmcli` dos veces, `ip -j addr` y, si toca, `curl`. Sondear detrás de un
+panel escondido son procesos enteros a cambio de nada, y es bastante más caro que
+lo que acabo de ahorrar en Pac-Man. Así que el mismo gate, cableado desde
+`NetPill` -que es la representación que vive en el panel y por lo tanto la única
+que sabe si el panel se ve- con un `Binding`, no una asignación, para que el
+estado recupere su valor si la representación se destruye.
+
+Con una diferencia importante: **reaparecer no dispara un ciclo**. Un panel con
+auto-ocultar se muestra cada vez que el puntero roza el borde; refrescar en cada
+una sería *más* trabajo que el temporizador que acabo de apagar -el arreglo
+saldría más caro que el problema-. Se guarda cuándo corrió el último ciclo y al
+volver sólo se recupera el tick si de verdad venció. Las dos mitades están
+afirmadas por separado, y falsificadas por separado: quitando el gate,
+`FAIL y la sonda de red tambien = true`; quitando el freno,
+`FAIL volver no dispara un ciclo si no tocaba` con el sello movido.
+
+Lo que **no** puedo medir desde aquí es cuánto ahorra en la práctica: en este
+contenedor no hay `nmcli`, ni `curl`, ni red, así que mediría el coste de
+arrancar procesos que fallan enseguida, no el de los de verdad. El argumento es
+mecánico -no lanzar tres procesos cada N segundos cuando nadie está mirando- y
+así queda dicho, como mecanismo y no como medición.
+
+De paso se cayó el `onVisibleChanged` de Pac-Man, que hacía el mismo `resync()`:
+`onScreen` ya depende de `visible`, así que eran dos handlers para un caso.

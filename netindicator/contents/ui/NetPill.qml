@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
@@ -158,5 +159,17 @@ Item {
             else
                 pill.togglePopup(pillMouse.wasExpanded);
         }
+    }
+
+    // La pastilla es lo que vive en el panel, asi que es quien puede decir si el
+    // panel se esta viendo. `pill.visible` solo no alcanza: al esconder la
+    // ventana se queda en `true`. El estado apaga la sonda con esto (ver
+    // NetState.qml); un `Binding` y no una asignacion para que el estado
+    // recupere su valor si la representacion se destruye.
+    Binding {
+        target: pill.state
+        property: "onScreen"
+        value: pill.visible && (pill.Window.window ? pill.Window.window.visible : true)
+        restoreMode: Binding.RestoreBindingOrValue
     }
 }
